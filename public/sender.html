@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiProjector - Sender</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="glass-container">
+        <h1>Share Screen</h1>
+        <div class="status-text">
+            <span id="status-indicator"></span>
+            <span id="status-label">Connecting...</span>
+        </div>
+        <button id="share-btn" class="btn primary-btn" disabled>Share Screen</button>
+        <button id="stop-btn" class="btn secondary-btn" style="display: none; margin-top: 1rem;">Stop Sharing</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let peerConnection;
+        let localStream;
+
+        const shareBtn = document.getElementById('share-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusLabel = document.getElementById('status-label');
+
+        const configuration = {
+            'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
+        };
+
+        socket.on('connect', () => {
+            statusIndicator.classList.add('connected');
+            statusLabel.textContent = 'Ready to share';
+            shareBtn.disabled = false;
+        });
+
+        socket.on('disconnect', () => {
+            statusIndicator.classList.remove('connected');
+            statusLabel.textContent = 'Disconnected';
+            shareBtn.disabled = true;
+            stopSharing();
+        });
+
+        socket.on('answer', async (data) => {
+            console.log('Received answer');
+            try {
+                if (peerConnection) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+                }
+            } catch (e) {
+                console.error("Error setting remote description", e);
+            }
+        });
+
+        socket.on('ice-candidate', async (data) => {
+            console.log('Received ICE candidate');
+            try {
+                if (peerConnection && data.candidate) {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            } catch (e) {
+                console.error('Error adding received ice candidate', e);
+            }
+        });
+
+        shareBtn.addEventListener('click', startSharing);
+        stopBtn.addEventListener('click', stopSharing);
+
+        async function startSharing() {
+            try {
+                localStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" },
+                    audio: false
+                });
+
+                localStream.getVideoTracks()[0].onended = () => {
+                    stopSharing();
+                };
+
+                peerConnection = new RTCPeerConnection(configuration);
+
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                    }
+                };
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                socket.emit('offer', { sdp: peerConnection.localDescription.sdp });
+
+                shareBtn.style.display = 'none';
+                stopBtn.style.display = 'block';
+                statusLabel.textContent = 'Sharing Screen...';
+
+            } catch (err) {
+                console.error("Error starting screen share:", err);
+                alert("Could not start screen sharing. Ensure you are accessing this site via HTTPS.");
+            }
+        }
+
+        function stopSharing() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            shareBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+            statusLabel.textContent = 'Ready to share';
+        }
+    </script>
+</body>
+</html>

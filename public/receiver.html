@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiProjector - Receiver</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="receiver-body">
+    <div id="video-container">
+        <div class="waiting-overlay" id="waiting-overlay">
+            <div class="spinner"></div>
+            <h1>PiProjector is Ready</h1>
+            <p>Waiting for a connection...</p>
+        </div>
+        <video id="remote-video" autoplay playsinline></video>
+    </div>
+
+    <script>
+        const socket = io();
+        let peerConnection;
+        const remoteVideo = document.getElementById('remote-video');
+        const waitingOverlay = document.getElementById('waiting-overlay');
+
+        const configuration = {
+            'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
+        };
+
+        socket.on('connect', () => {
+            console.log("Connected to signaling server");
+            socket.emit('register-receiver');
+        });
+
+        socket.on('offer', async (data) => {
+            console.log('Received offer from', data.senderId);
+            
+            if (peerConnection) {
+                peerConnection.close();
+            }
+
+            peerConnection = new RTCPeerConnection(configuration);
+
+            peerConnection.ontrack = event => {
+                console.log('Received track');
+                if (remoteVideo.srcObject !== event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                    waitingOverlay.classList.add('hidden');
+                }
+            };
+
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', { targetId: data.senderId, candidate: event.candidate });
+                }
+            };
+
+            peerConnection.onconnectionstatechange = () => {
+                if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                    resetVideo();
+                }
+            };
+
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                socket.emit('answer', { sdp: peerConnection.localDescription.sdp, senderId: data.senderId });
+            } catch (e) {
+                console.error("Error handling offer", e);
+            }
+        });
+
+        socket.on('ice-candidate', async (data) => {
+            try {
+                if (peerConnection && data.candidate) {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            } catch (e) {
+                console.error('Error adding received ice candidate', e);
+            }
+        });
+
+        function resetVideo() {
+            remoteVideo.srcObject = null;
+            waitingOverlay.classList.remove('hidden');
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+        }
+    </script>
+</body>
+</html>

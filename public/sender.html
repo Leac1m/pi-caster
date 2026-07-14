@@ -72,10 +72,36 @@
 
         async function startSharing() {
             try {
-                localStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { cursor: "always" },
-                    audio: false
-                });
+                if (!navigator.mediaDevices) throw new Error("Media devices not supported");
+
+                try {
+                    // Try screen sharing first
+                    if (!navigator.mediaDevices.getDisplayMedia) throw new Error("getDisplayMedia is not defined");
+                    localStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { 
+                            cursor: "always",
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 },
+                            frameRate: { ideal: 60 }
+                        },
+                        audio: false
+                    });
+                } catch (displayErr) {
+                    // Fallback to camera
+                    console.warn("Screen share failed, falling back to camera:", displayErr);
+                    const useCamera = confirm("Your browser doesn't support screen sharing (this is a mobile browser limitation). Do you want to share your camera instead to test the connection?");
+                    if (!useCamera) return;
+                    
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            frameRate: { ideal: 30 }
+                        },
+                        audio: false
+                    });
+                }
 
                 localStream.getVideoTracks()[0].onended = () => {
                     stopSharing();
@@ -100,11 +126,11 @@
 
                 shareBtn.style.display = 'none';
                 stopBtn.style.display = 'block';
-                statusLabel.textContent = 'Sharing Screen...';
+                statusLabel.textContent = 'Sharing...';
 
             } catch (err) {
-                console.error("Error starting screen share:", err);
-                alert("Could not start screen sharing. Ensure you are accessing this site via HTTPS.");
+                console.error("Error starting media stream:", err);
+                alert("Could not start screen or camera sharing. Ensure you are accessing this site via HTTPS and have granted permissions.");
             }
         }
 

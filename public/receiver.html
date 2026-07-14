@@ -30,20 +30,12 @@
     </div>
 
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
         const socket = io();
         let peerConnection;
         const remoteVideo = document.getElementById('remote-video');
         const pdfCanvas = document.getElementById('pdf-render');
         const pdfCtx = pdfCanvas.getContext('2d');
         const waitingOverlay = document.getElementById('waiting-overlay');
-
-        // Presentation State
-        let pdfDoc = null,
-            pageNum = 1,
-            pageIsRendering = false,
-            pageNumIsPending = null;
 
         const configuration = {
             'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
@@ -53,6 +45,20 @@
             console.log("Connected to signaling server");
             socket.emit('register-receiver');
         });
+
+        // Presentation State
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null;
+
+        // Safely initialize PDF.js
+        const pdfJS = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (pdfJS) {
+            pdfJS.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        } else {
+            console.error("PDF.js failed to load from CDN.");
+        }
 
         /* --- PDF Presentation Logic --- */
         const renderPage = num => {
@@ -93,14 +99,19 @@
             remoteVideo.style.display = 'none';
             pdfCanvas.style.display = 'block';
 
-            pdfjsLib.getDocument(data.fileUrl).promise.then(doc => {
-                pdfDoc = doc;
-                pageNum = 1;
-                renderPage(pageNum);
-            }).catch(err => {
-                console.error("Error loading PDF", err);
+            if (pdfJS) {
+                pdfJS.getDocument(data.fileUrl).promise.then(doc => {
+                    pdfDoc = doc;
+                    pageNum = 1;
+                    renderPage(pageNum);
+                }).catch(err => {
+                    console.error("Error loading PDF", err);
+                    resetAll();
+                });
+            } else {
+                console.error("Cannot load presentation, PDF.js not initialized.");
                 resetAll();
-            });
+            }
         });
 
         socket.on('slide-next', () => {
@@ -134,7 +145,11 @@
             peerConnection.ontrack = event => {
                 console.log('Received track');
                 if (remoteVideo.srcObject !== event.streams[0]) {
-                    resetAll();
+                    // Only reset the PDF display, DO NOT reset the video/connection!
+                    pdfDoc = null;
+                    pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+                    pdfCanvas.style.display = 'none';
+                    
                     remoteVideo.style.display = 'block';
                     remoteVideo.srcObject = event.streams[0];
                     waitingOverlay.classList.add('hidden');

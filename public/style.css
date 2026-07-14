@@ -185,3 +185,86 @@ video {
     align-items: center;
     justify-content: center;
 }
+
+/* Dashboard Cards */
+.card-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+    .card-group {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.card h3 {
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.card p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Remote Control UI */
+.remote-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: var(--bg-gradient);
+}
+
+.remote-header {
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.danger-btn {
+    background: #ef4444;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    width: auto;
+}
+
+.danger-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.remote-controls {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    gap: 1rem;
+}
+
+.control-btn {
+    flex: 1;
+    font-size: 2rem;
+    border-radius: 24px;
+}
+
+#btn-prev {
+    flex: 0.3;
+}

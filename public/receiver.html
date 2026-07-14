@@ -6,22 +6,44 @@
     <title>PiProjector - Receiver</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        #pdf-render {
+            display: none;
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body class="receiver-body">
     <div id="video-container">
         <div class="waiting-overlay" id="waiting-overlay">
             <div class="spinner"></div>
             <h1>PiProjector is Ready</h1>
-            <p>Waiting for a connection...</p>
+            <p>Waiting for a connection or presentation...</p>
         </div>
         <video id="remote-video" autoplay playsinline></video>
+        <canvas id="pdf-render"></canvas>
     </div>
 
     <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
         const socket = io();
         let peerConnection;
         const remoteVideo = document.getElementById('remote-video');
+        const pdfCanvas = document.getElementById('pdf-render');
+        const pdfCtx = pdfCanvas.getContext('2d');
         const waitingOverlay = document.getElementById('waiting-overlay');
+
+        // Presentation State
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null;
 
         const configuration = {
             'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
@@ -32,6 +54,74 @@
             socket.emit('register-receiver');
         });
 
+        /* --- PDF Presentation Logic --- */
+        const renderPage = num => {
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 2 });
+                pdfCanvas.height = viewport.height;
+                pdfCanvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: pdfCtx,
+                    viewport: viewport
+                };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+            });
+        };
+
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
+
+        socket.on('presentation-start', (data) => {
+            console.log("Starting presentation:", data.fileUrl);
+            resetVideo();
+            waitingOverlay.classList.add('hidden');
+            remoteVideo.style.display = 'none';
+            pdfCanvas.style.display = 'block';
+
+            pdfjsLib.getDocument(data.fileUrl).promise.then(doc => {
+                pdfDoc = doc;
+                pageNum = 1;
+                renderPage(pageNum);
+            }).catch(err => {
+                console.error("Error loading PDF", err);
+                resetAll();
+            });
+        });
+
+        socket.on('slide-next', () => {
+            if (!pdfDoc || pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        socket.on('slide-prev', () => {
+            if (!pdfDoc || pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+
+        socket.on('presentation-stop', () => {
+            console.log("Stopping presentation");
+            resetAll();
+        });
+
+
+        /* --- WebRTC Screen Share Logic --- */
         socket.on('offer', async (data) => {
             console.log('Received offer from', data.senderId);
             
@@ -44,6 +134,8 @@
             peerConnection.ontrack = event => {
                 console.log('Received track');
                 if (remoteVideo.srcObject !== event.streams[0]) {
+                    resetAll();
+                    remoteVideo.style.display = 'block';
                     remoteVideo.srcObject = event.streams[0];
                     waitingOverlay.classList.add('hidden');
                 }
@@ -57,7 +149,7 @@
 
             peerConnection.onconnectionstatechange = () => {
                 if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
-                    resetVideo();
+                    resetAll();
                 }
             };
 
@@ -84,11 +176,19 @@
 
         function resetVideo() {
             remoteVideo.srcObject = null;
-            waitingOverlay.classList.remove('hidden');
             if (peerConnection) {
                 peerConnection.close();
                 peerConnection = null;
             }
+        }
+
+        function resetAll() {
+            resetVideo();
+            pdfDoc = null;
+            pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+            pdfCanvas.style.display = 'none';
+            remoteVideo.style.display = 'block'; // reset to default
+            waitingOverlay.classList.remove('hidden');
         }
     </script>
 </body>

@@ -1,39 +1,41 @@
-# Product Requirements Document: PiProjector (Screen Share Edition)
+# Product Requirements Document: PiProjector (Full Presentation Suite)
 
 ## Overview
-This document outlines the requirements and architecture for a lightweight, single-purpose version of the PiProjector. Its sole function is to facilitate instant, frictionless screen sharing from a mobile device or laptop to a physical projector using local peer-to-peer web technologies, eliminating the need for external internet access or proprietary apps.
+This document outlines the comprehensive PiProjector ecosystem. It combines local document hosting, native slide rendering, smartphone remote control, and live screen sharing into a single, unified web application operating over local peer-to-peer web technologies without requiring internet access.
 
 ## Target Audience
-- Presenters, educators, or individuals in meeting rooms needing a seamless, hardware-agnostic way to cast their screens to a projector without HDMI cables or dongles.
+- Presenters, educators, or individuals in meeting rooms needing a seamless, hardware-agnostic way to cast their screens or control presentations on a projector without HDMI cables or dongles.
 
-## 1. Core User Flow
-The primary interaction sequence is designed for minimal friction:
+## 1. Feature Specifications
 
-| Step | Phase | Action | Description |
-| :--- | :--- | :--- | :--- |
-| **1** | **Boot** | Projector On | The Raspberry Pi boots into Kiosk mode and displays a branded QR code linked to its local IP address. |
-| **2** | **Scan** | Connect Device | The user scans the QR code with their smartphone or laptop. This connects the device to the Pi's local network (if applicable) and opens the Web App in their default browser. |
-| **3** | **Initiate** | Tap "Share" | The user taps a prominent "Share Screen" button on the Web App UI. |
-| **4** | **Permission**| Grant Access | The device's operating system natively prompts the user to grant screen recording permissions to the browser. |
-| **5** | **Mirror** | Live Stream | The projector display instantly transitions from the QR code to a full-screen, low-latency live feed of the user's device screen. |
+| Feature | Primary Function | Technical Approach |
+| --- | --- | --- |
+| **Document Upload** | Allows users to send presentation files to the Pi. | HTTP multipart/form-data upload to a local Node.js server. |
+| **Native Parsing** | Displays slides without backend conversion. | Client-side JavaScript libraries (e.g., `pptx-viewer`, `PDF.js`) rendering in the Kiosk browser. |
+| **Remote Control** | Turns the user's phone into a clicker. | Sub-millisecond WebSocket (`Socket.io`) commands sent from the phone to the Kiosk browser. |
+| **Live Screen Share** | Mirrors the user's device for live demos. | WebRTC peer-to-peer streaming initialized via the native `getDisplayMedia()` API. |
 
-## 2. Technical Architecture & Constraints
-To achieve browser-based screen sharing entirely over a local network (without external internet access), specific native Web APIs must be strictly managed.
+## 2. Unified User Flow
 
-### 2.1 Media Capture
-* **Capture Mechanism:** The system utilizes the `navigator.mediaDevices.getDisplayMedia()` API to prompt the user to select and grant permission to capture their screen or specific application windows.
-* **Media Handling:** Once permission is granted, the method returns a `Promise` that resolves to a `MediaStream` object, containing the real-time video/audio track of the captured display surface.
+The interface intelligently separates static presentations from live screen mirroring.
 
-### 2.2 Security & Context Requirements
-* **Secure Context Enforcement:** The `getDisplayMedia()` API is restricted by modern browsers and is only available in secure contexts (HTTPS). Because the system operates entirely offline, the Raspberry Pi's local Node.js server must be configured with a self-signed SSL certificate to serve the Web App over HTTPS.
-* **Transient Activation Rule:** Browser security policies require "transient user activation" for media capture. Screen capture cannot be initiated programmatically on load; the user must actively interact with a UI element (e.g., clicking the "Share Screen" button) to trigger the system prompt.
-* **Permission Lifespan:** Permissions granted via `getDisplayMedia()` cannot be persisted for future sessions. The user must be explicitly prompted to grant permission each time a new sharing session is initiated.
+1. **Connection:** The user scans the projected QR code and joins the captive portal, loading the mobile dashboard.
+2. **Mode Selection:** The user is presented with two primary actions: "Upload Presentation" or "Share Live Screen."
+   * **Path A (Presentation):** The user uploads a `.pptx` or `.pdf` file. The file is sent to the Pi and rendered on the projector. The mobile UI switches to a Remote Control layout (Next/Previous buttons).
+   * **Path B (Screen Share):** The user taps "Share Live Screen." Because transient user activation is required, this explicit tap safely triggers the OS permission prompt.
+3. **Active State:** If Path B is chosen, the projector dynamically injects an HTML `<video>` element into the DOM, displaying the incoming `MediaStream`. The mobile UI switches to a "Stop Sharing" kill-switch.
+4. **Session Termination:** Once the presentation is over or the user taps "Stop," the Kiosk browser resets to the Idle QR Code state. The system securely purges any temporary files from the Pi's local storage.
 
-### 2.3 Transmission & Networking
-* **Transmission Protocol:** The captured `MediaStream` is transmitted directly to the Raspberry Pi's Kiosk browser via a local WebRTC Peer-to-Peer connection.
-* **Local Network Dependency:** WebRTC signaling (SDP exchange and ICE candidates) is brokered by the local Node.js server. The video stream utilizes the local network (or a localized hotspot generated by the Pi) to ensure low-latency delivery without relying on an external STUN/TURN server, assuming all devices are on the same local subnet.
+## 3. Technical Architecture & Constraints
+### 3.1 Media Capture
+* **Capture Mechanism:** The system utilizes the `navigator.mediaDevices.getDisplayMedia()` API to capture the screen.
+* **Security & Context Requirements:** The `getDisplayMedia()` API is restricted to secure contexts (HTTPS). The local Node.js server must use a self-signed SSL certificate via Caddy.
 
-## 3. Success Metrics
-* **Time to First Frame:** Time elapsed from scanning the QR code to the first frame of the screen share appearing on the projector (Target: < 5 seconds).
-* **Latency:** End-to-end delay between the user's device and the projector (Target: < 200ms).
-* **Reliability:** Successful connection establishment rate without dropped frames or WebRTC negotiation failures.
+### 3.2 Transmission & Networking
+* **WebRTC:** Transmission directly to the Kiosk browser via local WebRTC P2P connection, brokered by Socket.IO.
+* **WebSockets:** Used for real-time remote control signaling.
+
+## 4. Success Metrics
+* **Time to First Frame:** Target < 5 seconds for screen share.
+* **Latency:** End-to-end delay < 200ms.
+* **Reliability:** Successful connection without dropped frames or WebRTC negotiation failures.

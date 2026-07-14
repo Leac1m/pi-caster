@@ -3,17 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PiProjector</title>
+    <title>PiProjector Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="landing-body">
     <div class="glass-container landing-container">
         <h1>PiProjector</h1>
-        <p>Seamless local screen sharing</p>
-        <div class="button-group">
-            <a href="sender.html" class="btn primary-btn">Share Screen (Sender)</a>
-            <a href="receiver.html" class="btn secondary-btn">Open Display (Receiver)</a>
+        <p>Select a presentation mode</p>
+        
+        <div class="card-group">
+            <div class="card">
+                <h3>Document Upload</h3>
+                <p>Upload a PDF to present</p>
+                <input type="file" id="file-input" accept=".pdf" style="display: none;" />
+                <button class="btn primary-btn" onclick="document.getElementById('file-input').click()">Choose File</button>
+                <div id="upload-status" style="margin-top: 10px; font-size: 0.9em;"></div>
+            </div>
+            
+            <div class="card">
+                <h3>Live Screen</h3>
+                <p>Mirror your display</p>
+                <a href="sender.html" class="btn secondary-btn">Share Screen</a>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <a href="receiver.html" class="status-text" style="color: rgba(255,255,255,0.5); text-decoration: none;">Open Projector Display (Receiver)</a>
         </div>
     </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const uploadStatus = document.getElementById('upload-status');
+
+        fileInput.addEventListener('change', async (e) => {
+            if (!e.target.files.length) return;
+            const file = e.target.files[0];
+            
+            const formData = new FormData();
+            formData.append('presentation', file);
+
+            uploadStatus.textContent = 'Uploading...';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    uploadStatus.textContent = 'Success! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = 'remote.html';
+                    }, 500);
+                } else {
+                    uploadStatus.textContent = 'Upload failed.';
+                }
+            } catch (error) {
+                console.error(error);
+                uploadStatus.textContent = 'Error uploading file.';
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiProjector Remote</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="landing-body" style="align-items: stretch; margin: 0; padding: 0;">
+    <div class="remote-container">
+        <header class="remote-header">
+            <h2>Remote Control</h2>
+            <button id="btn-stop" class="btn danger-btn">Stop</button>
+        </header>
+        
+        <div class="remote-controls">
+            <button id="btn-prev" class="btn secondary-btn control-btn">Previous</button>
+            <button id="btn-next" class="btn primary-btn control-btn">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            socket.emit('register-remote');
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            socket.emit('slide-next');
+            if(navigator.vibrate) navigator.vibrate(50);
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            socket.emit('slide-prev');
+            if(navigator.vibrate) navigator.vibrate(50);
+        });
+
+        document.getElementById('btn-stop').addEventListener('click', () => {
+            socket.emit('presentation-stop');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

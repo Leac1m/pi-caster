@@ -134,7 +134,7 @@ function purgePresentation() {
 export { app, httpServer, io };
 
 const PORT = process.env.PORT || 3000;
-if (process.argv[1] === __filename) {
+if (process.env.NODE_ENV !== 'test') {
     httpServer.listen(PORT, () => {
         console.log(`Server listening on port ${PORT}`);
     });

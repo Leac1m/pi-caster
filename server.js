@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,22 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 let receiverSocketId = null;
 let activePresentationPath = null;
 let remoteSocketId = null;
+
+// Local IP Route
+app.get('/api/ip', (req, res) => {
+    const interfaces = os.networkInterfaces();
+    let localIp = 'localhost';
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                localIp = iface.address;
+                break;
+            }
+        }
+        if (localIp !== 'localhost') break;
+    }
+    res.json({ ip: localIp });
+});
 
 // File Upload Route
 app.post('/upload', upload.single('presentation'), (req, res) => {

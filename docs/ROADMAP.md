@@ -26,9 +26,9 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 - [x] Add logic to securely purge temporary files after a session ends.
 
 ## Phase 5: Raspberry Pi Integration (Hardware & OS)
-- [ ] Implement QR Code generation on the Receiver UI to display the Pi's local IP address.
-- [ ] Configure Raspberry Pi to automatically boot into Chromium Kiosk Mode.
-- [ ] Create an auto-start service/script for the local server on the Pi.
+- [x] Implement QR Code generation on the Receiver UI to display the Pi's local IP address.
+- [x] Configure Raspberry Pi to automatically boot into Chromium Kiosk Mode.
+- [x] Create an auto-start service/script for the local server on the Pi.
 
 ## Phase 6: Refinement, Stability & Edge Cases
 - [ ] Address mobile constraints for screen share (e.g. restrict to Presentation Mode on mobile, use screen share on laptop).

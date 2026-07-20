@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         #pdf-render {
             display: none;
@@ -24,6 +25,8 @@
             <div class="spinner"></div>
             <h1>PiProjector is Ready</h1>
             <p>Waiting for a connection or presentation...</p>
+            <div id="qrcode" style="margin-top: 20px; background: white; padding: 10px; border-radius: 10px; display: none;"></div>
+            <p id="ip-text" style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;"></p>
         </div>
         <video id="remote-video" autoplay playsinline></video>
         <canvas id="pdf-render"></canvas>
@@ -44,6 +47,29 @@
         socket.on('connect', () => {
             console.log("Connected to signaling server");
             socket.emit('register-receiver');
+
+            fetch('/api/ip')
+                .then(res => res.json())
+                .then(data => {
+                    // Always try to point to HTTPS if possible, but fallback to current protocol
+                    const port = window.location.port ? ':' + window.location.port : '';
+                    // For PiCaster we assume port 443 with Caddy or the current port
+                    const url = `https://${data.ip}/`;
+                    
+                    document.getElementById('ip-text').textContent = `Connect at: ${url}`;
+                    const qrContainer = document.getElementById('qrcode');
+                    qrContainer.style.display = 'block';
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: url,
+                        width: 150,
+                        height: 150,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                })
+                .catch(err => console.error('Failed to get IP for QR code', err));
         });
 
         // Presentation State

@@ -4,6 +4,24 @@
 
 echo "Starting PiCaster Raspberry Pi Setup..."
 
+# 0. Install Prerequisites
+echo "Checking and installing prerequisites..."
+sudo apt-get update
+
+if ! command -v chromium-browser &> /dev/null; then
+    echo "Installing Chromium Browser..."
+    sudo apt-get install -y chromium-browser
+fi
+
+if ! command -v docker &> /dev/null; then
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker $USER
+    rm get-docker.sh
+    echo "Docker installed. You may need to log out and log back in for user group changes to take effect."
+fi
+
 # 1. Ensure Docker is enabled on boot (since docker-compose restart: unless-stopped is configured)
 echo "Enabling Docker service on boot..."
 sudo systemctl enable docker

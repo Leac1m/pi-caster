@@ -83,7 +83,7 @@
                 msg.style.marginTop = '10px';
                 
                 if (isCaptivePortal) {
-                    msg.innerHTML = '<b>Captive Portal Detected.</b><br>To share your screen, please open Safari/Chrome and navigate to:<br><b>http://10.42.0.1</b>';
+                    msg.innerHTML = '<b>Captive Portal Detected.</b><br>To share your screen, please open Safari/Chrome and navigate to:<br><b>https://10.42.0.1</b>';
                     
                     // Add the same warning to Document Upload since file uploads can be buggy in captive portals
                     const uploadCard = document.querySelectorAll('.card')[0];
@@ -94,7 +94,7 @@
                         uploadMsg.style.color = '#ff6b6b';
                         uploadMsg.style.fontSize = '0.85em';
                         uploadMsg.style.marginTop = '10px';
-                        uploadMsg.innerHTML = '<b>Captive Portal Detected.</b><br>To upload presentations, please open Safari/Chrome and navigate to:<br><b>http://10.42.0.1</b>';
+                        uploadMsg.innerHTML = '<b>Captive Portal Detected.</b><br>To upload presentations, please open Safari/Chrome and navigate to:<br><b>https://10.42.0.1</b>';
                         uploadCard.appendChild(uploadMsg);
                     }
                 } else {

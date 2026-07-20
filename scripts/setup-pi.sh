@@ -30,9 +30,9 @@ sudo systemctl start docker
 # Start the docker containers
 echo "Starting PiCaster docker containers..."
 if command -v docker-compose &> /dev/null; then
-    sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate
 else
-    sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate
 fi
 
 # 1.5 Setup Standalone Access Point (Phase 9)

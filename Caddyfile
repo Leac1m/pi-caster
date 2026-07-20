@@ -2,7 +2,7 @@
     default_sni localhost
 }
 
-:80 {
+http:// {
     @captive {
         not host localhost 10.42.0.1 picaster.local
     }
@@ -11,10 +11,12 @@
     @local {
         host localhost 10.42.0.1 picaster.local
     }
-    redir @local https://{host}{uri}
+    handle @local {
+        reverse_proxy {$APP_HOST:app}:3000
+    }
 }
 
-localhost, 10.42.0.1, picaster.local, :443 {
+https://localhost, https://10.42.0.1, https://picaster.local {
     tls internal
     reverse_proxy {$APP_HOST:app}:3000
 }

@@ -65,6 +65,21 @@
                 uploadStatus.textContent = 'Error uploading file.';
             }
         });
+
+        // Mobile constraint check for screen share
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            const liveScreenCard = document.querySelectorAll('.card')[1];
+            if (liveScreenCard) {
+                const shareBtn = liveScreenCard.querySelector('.btn');
+                if (shareBtn) shareBtn.style.display = 'none';
+                const msg = document.createElement('p');
+                msg.style.color = '#ff6b6b';
+                msg.style.fontSize = '0.85em';
+                msg.style.marginTop = '10px';
+                msg.textContent = 'Screen mirroring requires a desktop/laptop browser.';
+                liveScreenCard.appendChild(msg);
+            }
+        }
     </script>
 </body>
 </html>

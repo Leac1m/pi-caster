@@ -21,10 +21,26 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
+        });
+
+        const headerTitle = document.querySelector('.remote-header h2');
 
         socket.on('connect', () => {
+            headerTitle.textContent = 'Remote Control';
             socket.emit('register-remote');
+        });
+
+        socket.on('disconnect', () => {
+            headerTitle.textContent = 'Disconnected...';
+        });
+
+        socket.io.on('reconnect_attempt', () => {
+            headerTitle.textContent = 'Reconnecting...';
         });
 
         document.getElementById('btn-next').addEventListener('click', () => {

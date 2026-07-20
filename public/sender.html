@@ -19,7 +19,12 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
+        });
         let peerConnection;
         let localStream;
 
@@ -34,15 +39,25 @@
 
         socket.on('connect', () => {
             statusIndicator.classList.add('connected');
-            statusLabel.textContent = 'Ready to share';
-            shareBtn.disabled = false;
+            statusLabel.textContent = localStream ? 'Sharing...' : 'Ready to share';
+            
+            // Re-negotiate if stream is active upon reconnect
+            if (localStream && peerConnection) {
+                 reconnectWebRTC();
+            } else if (!localStream) {
+                 shareBtn.disabled = !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia;
+            }
         });
 
         socket.on('disconnect', () => {
             statusIndicator.classList.remove('connected');
-            statusLabel.textContent = 'Disconnected';
+            statusLabel.textContent = 'Disconnected...';
             shareBtn.disabled = true;
-            stopSharing();
+        });
+
+        socket.io.on("reconnect_attempt", () => {
+            statusIndicator.className = '';
+            statusLabel.textContent = 'Reconnecting...';
         });
 
         socket.on('answer', async (data) => {
@@ -72,36 +87,20 @@
 
         async function startSharing() {
             try {
-                if (!navigator.mediaDevices) throw new Error("Media devices not supported");
-
-                try {
-                    // Try screen sharing first
-                    if (!navigator.mediaDevices.getDisplayMedia) throw new Error("getDisplayMedia is not defined");
-                    localStream = await navigator.mediaDevices.getDisplayMedia({
-                        video: { 
-                            cursor: "always",
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 },
-                            frameRate: { ideal: 60 }
-                        },
-                        audio: false
-                    });
-                } catch (displayErr) {
-                    // Fallback to camera
-                    console.warn("Screen share failed, falling back to camera:", displayErr);
-                    const useCamera = confirm("Your browser doesn't support screen sharing (this is a mobile browser limitation). Do you want to share your camera instead to test the connection?");
-                    if (!useCamera) return;
-                    
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        video: { 
-                            facingMode: 'environment',
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 },
-                            frameRate: { ideal: 30 }
-                        },
-                        audio: false
-                    });
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    alert("Screen mirroring is only supported on desktops/laptops. Please use Document Upload.");
+                    return;
                 }
+
+                localStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        cursor: "always",
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 30, max: 60 } // Optimized for presentation latency
+                    },
+                    audio: false
+                });
 
                 localStream.getVideoTracks()[0].onended = () => {
                     stopSharing();
@@ -119,7 +118,17 @@
                     }
                 };
 
+                peerConnection.onconnectionstatechange = () => {
+                    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                        console.log('WebRTC connection lost. Attempting to reconnect...');
+                        if (localStream) {
+                            reconnectWebRTC();
+                        }
+                    }
+                };
+
                 const offer = await peerConnection.createOffer();
+                // Low-latency SDP munging (simple hack: lower bitrates if needed, but standard config is usually fine on LAN)
                 await peerConnection.setLocalDescription(offer);
                 
                 socket.emit('offer', { sdp: peerConnection.localDescription.sdp });
@@ -146,6 +155,36 @@
             shareBtn.style.display = 'block';
             stopBtn.style.display = 'none';
             statusLabel.textContent = 'Ready to share';
+        }
+
+        async function reconnectWebRTC() {
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                }
+            };
+            
+            peerConnection.onconnectionstatechange = () => {
+                if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                    if (localStream) setTimeout(reconnectWebRTC, 2000);
+                }
+            };
+
+            const offer = await peerConnection.createOffer({ iceRestart: true });
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('offer', { sdp: peerConnection.localDescription.sdp });
         }
     </script>
 </body>

@@ -33,7 +33,12 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
+        });
         let peerConnection;
         const remoteVideo = document.getElementById('remote-video');
         const pdfCanvas = document.getElementById('pdf-render');

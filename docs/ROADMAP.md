@@ -31,7 +31,7 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 - [x] Create an auto-start service/script for the local server on the Pi.
 
 ## Phase 6: Refinement, Stability & Edge Cases
-- [ ] Address mobile constraints for screen share (e.g. restrict to Presentation Mode on mobile, use screen share on laptop).
-- [ ] Implement robust auto-reconnect logic on the Sender/Receiver.
-- [ ] Test and optimize for low-latency (< 200ms).
+- [x] Address mobile constraints for screen share (e.g. restrict to Presentation Mode on mobile, use screen share on laptop).
+- [x] Implement robust auto-reconnect logic on the Sender/Receiver.
+- [x] Test and optimize for low-latency (< 200ms).
 - [x] Refine user interface for "WOW" factor and premium experience.

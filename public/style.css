@@ -309,6 +309,14 @@ video {
     display: none;
 }
 
+#pptx-preview, #pptx-render {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
 #preview-loading {
     color: rgba(255,255,255,0.5);
     margin: 0;

@@ -189,10 +189,46 @@
         const renderPptxSlide = (num) => {
             const slides = $('#pptx-preview .slide');
             slides.hide();
-            if (slides[num - 1]) {
-                $(slides[num - 1]).show();
+            const slide = slides[num - 1];
+            if (slide) {
+                $(slide).show();
+                scalePptxSlide(slide);
             }
         };
+
+        const scalePptxSlide = (slide) => {
+            const container = document.getElementById('pptx-preview');
+            // Assuming standard 960x720 if not readable, PPTXjs sets inline dimensions
+            const slideWidth = slide.offsetWidth || 960;
+            const slideHeight = slide.offsetHeight || 720;
+            
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            const scale = Math.min(containerWidth / slideWidth, containerHeight / slideHeight);
+            
+            slide.style.transformOrigin = 'top left';
+            slide.style.transform = `scale(${scale})`;
+            
+            // Center the scaled slide
+            const scaledWidth = slideWidth * scale;
+            const scaledHeight = slideHeight * scale;
+            const offsetX = (containerWidth - scaledWidth) / 2;
+            const offsetY = (containerHeight - scaledHeight) / 2;
+            
+            slide.style.position = 'absolute';
+            slide.style.left = `${offsetX}px`;
+            slide.style.top = `${offsetY}px`;
+        };
+
+        window.addEventListener('resize', () => {
+            if (isPptx) {
+                const slides = $('#pptx-preview .slide');
+                if (slides[pageNum - 1]) {
+                    scalePptxSlide(slides[pageNum - 1]);
+                }
+            }
+        });
 
         document.getElementById('btn-next').addEventListener('click', () => {
             socket.emit('slide-next');

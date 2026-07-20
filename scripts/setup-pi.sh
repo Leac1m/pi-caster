@@ -124,9 +124,21 @@ fi
 echo "Configuring Chromium Kiosk Mode..."
 
 # Check if using Wayland (newer Pi OS) or X11 (older Pi OS)
-if [ -d "$HOME/.config/wayfire" ] || [ -f "$HOME/.config/wayfire.ini" ]; then
+if command -v labwc &> /dev/null || [ -d "$HOME/.config/labwc" ]; then
+    echo "Wayland (labwc) detected."
+    mkdir -p "$HOME/.config/labwc"
+    LABWC_AUTOSTART="$HOME/.config/labwc/autostart"
+    
+    if ! grep -q "$CHROMIUM_CMD" "$LABWC_AUTOSTART" 2>/dev/null; then
+        echo "$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito --ozone-platform=wayland https://localhost/receiver &" >> "$LABWC_AUTOSTART"
+        echo "Added Chromium to labwc autostart."
+    else
+        echo "Chromium autostart already configured in labwc."
+    fi
+
+elif command -v wayfire &> /dev/null || [ -f "/etc/wayfire/wayfire.ini" ]; then
     echo "Wayland (Wayfire) detected."
-    mkdir -p $HOME/.config
+    mkdir -p "$HOME/.config"
     WAYFIRE_INI="$HOME/.config/wayfire.ini"
     
     if ! grep -q "$CHROMIUM_CMD" "$WAYFIRE_INI" 2>/dev/null; then
@@ -136,8 +148,9 @@ if [ -d "$HOME/.config/wayfire" ] || [ -f "$HOME/.config/wayfire.ini" ]; then
         echo "Chromium autostart already configured in Wayfire."
     fi
 
-elif [ -d "$HOME/.config/lxsession/LXDE-pi" ]; then
+elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; then
     echo "X11 (LXDE) detected."
+    mkdir -p "$HOME/.config/lxsession/LXDE-pi"
     AUTOSTART="$HOME/.config/lxsession/LXDE-pi/autostart"
     
     if ! grep -q "$CHROMIUM_CMD" "$AUTOSTART" 2>/dev/null; then

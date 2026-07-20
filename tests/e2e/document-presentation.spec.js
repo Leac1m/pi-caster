@@ -77,6 +77,68 @@ test.describe('Document Presentation with Remote Preview', () => {
     // Cleanup
     await receiverContext.close();
     await senderContext.close();
-    fs.unlinkSync(testPdfPath);
+    if (fs.existsSync(testPdfPath)) {
+        fs.unlinkSync(testPdfPath);
+    }
+  });
+
+  test('should upload PPTX, sync to receiver, and render preview on remote', async ({ browser }) => {
+    const testPptxPath = './tests/e2e/test-dummy.pptx';
+    
+    // We expect the dummy file to already exist, created via npm pptxgenjs script
+    if (!fs.existsSync(testPptxPath)) {
+      test.skip();
+      return;
+    }
+
+    const receiverContext = await browser.newContext();
+    const senderContext = await browser.newContext();
+
+    const receiverPage = await receiverContext.newPage();
+    const senderPage = await senderContext.newPage();
+
+    senderPage.on('console', msg => console.log('Sender Console: ' + msg.text()));
+    senderPage.on('pageerror', error => console.log('Sender Error: ' + error.message));
+    receiverPage.on('console', msg => console.log('Receiver Console: ' + msg.text()));
+    receiverPage.on('pageerror', error => console.log('Receiver Error: ' + error.message));
+
+    // Open Receiver
+    await receiverPage.goto('/receiver');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+
+    // Open Sender (Index) and upload PPTX
+    await senderPage.goto('/index');
+    
+    const fileChooserPromise = senderPage.waitForEvent('filechooser');
+    await senderPage.locator('text=Choose File').click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(testPptxPath);
+
+    await expect(senderPage.locator('#upload-status')).toContainText('Success! Redirecting...', { timeout: 10000 });
+    await senderPage.waitForURL('**/remote');
+
+    // Verify Remote UI
+    await expect(senderPage.locator('.remote-header h2')).toContainText('Remote Control');
+    
+    // The PPTX loading div should become visible and loading text disappear
+    await expect(senderPage.locator('#preview-loading')).toBeHidden({ timeout: 15000 });
+    await expect(senderPage.locator('#pptx-preview')).toBeVisible();
+
+    // Verify Receiver UI
+    await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/, { timeout: 10000 });
+    await expect(receiverPage.locator('#pptx-render')).toBeVisible();
+
+    // Test stopping presentation
+    await senderPage.locator('#btn-stop').click();
+    await senderPage.waitForURL('**/index');
+
+    // Receiver should reset
+    await expect(receiverPage.locator('#waiting-overlay')).toBeVisible();
+    await expect(receiverPage.locator('#pptx-render')).toBeHidden();
+
+    // Cleanup
+    await receiverContext.close();
+    await senderContext.close();
   });
 });
+

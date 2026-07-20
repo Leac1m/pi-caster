@@ -7,72 +7,36 @@ This guide walks you through deploying PiCaster on a Raspberry Pi. Once configur
 - **OS**: Raspberry Pi OS (with Desktop environment). PiCaster relies on the desktop environment (Wayfire or LXDE) to launch the Chromium browser.
 - **Network**: The Pi must be connected to the local Wi-Fi network or Ethernet.
 
-## 1. Initial Setup
+## 1. Quick Start Installation
 
-First, open a terminal on your Raspberry Pi and ensure your system is up to date:
+Because PiCaster is designed as a standalone appliance, we have created an automated installation script that handles all dependencies, container builds, and desktop configurations.
+
+First, open a terminal on your fresh Raspberry Pi OS installation and clone the repository:
 ```bash
-sudo apt update && sudo apt upgrade -y
-```
-
-Install Git:
-```bash
-sudo apt install git -y
-```
-
-## 2. Install Docker & Docker Compose
-
-PiCaster uses Docker to manage the Express server and the Caddy HTTPS proxy.
-
-Install Docker:
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-```
-
-Add your user to the Docker group so you can run commands without `sudo`:
-```bash
-sudo usermod -aG docker $USER
-```
-*(Note: You may need to log out and log back in, or run `newgrp docker`, for this to take effect.)*
-
-Install Docker Compose:
-```bash
-sudo apt-get install docker-compose-plugin -y
-# Or for older versions: sudo apt-get install docker-compose -y
-```
-
-## 3. Clone the Repository
-
-Clone the PiCaster repository into your home directory (or another preferred location):
-```bash
-cd ~
-git clone <your-repository-url> pi-caster
+git clone https://github.com/Leac1m/pi-caster.git
 cd pi-caster
 ```
 
-## 4. Run the Automated Setup Script
-
-We have provided an automated script that configures your Raspberry Pi's desktop environment to automatically boot into Chromium Kiosk Mode, and ensures the Docker containers start on boot.
-
-From the `pi-caster` directory, run:
+Then, run the automated setup script:
 ```bash
-chmod +x scripts/setup-pi.sh
-./scripts/setup-pi.sh
+bash scripts/setup-pi.sh
 ```
 
-**What the script does:**
-1. **Docker Service**: Enables and starts the Docker systemd service.
-2. **Container Spin-up**: Runs `docker-compose up -d` to build and start the PiCaster containers.
-3. **Kiosk Mode Config**: Detects whether your Pi is using Wayland (Wayfire) or X11 (LXDE) and writes the appropriate configuration to launch `chromium-browser` in full-screen incognito mode pointing to `https://localhost/receiver`.
+**What the script does under the hood:**
+1. **Installs Dependencies**: Automatically installs Docker, Docker Compose, Chromium, and NetworkManager if they are missing.
+2. **Docker Service**: Enables and starts the Docker systemd service.
+3. **Container Spin-up**: Runs `docker-compose up -d` to build and start the PiCaster containers (Node.js and Caddy).
+4. **Networking Fallback**: Installs the `picaster-ap-fallback` systemd service to manage the Captive Portal hotspot.
+5. **Kiosk Mode Config**: Detects whether your Pi is using Wayland (Wayfire) or X11 (LXDE) and writes the appropriate configuration to launch `chromium-browser` in full-screen incognito mode pointing to `https://localhost/receiver`.
 
-## 5. Reboot
+## 2. Reboot
 
-Once the script finishes, reboot your Raspberry Pi:
+Once the script finishes, simply reboot your Raspberry Pi:
 ```bash
 sudo reboot
 ```
 
-## 6. Usage & Wi-Fi Provisioning (Captive Portal)
+## 3. Usage & Wi-Fi Provisioning (Captive Portal)
 
 PiCaster includes a smart Network Provisioning system for easy deployment in new environments.
 

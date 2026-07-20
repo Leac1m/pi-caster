@@ -37,8 +37,13 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 - [x] Refine user interface for "WOW" factor and premium experience.
 
 ## Phase 7: Network Provisioning (AP Fallback & Captive Portal)
-- [ ] Integrate a network manager tool (e.g., RaspAP or NetworkManager API) to allow the Pi to host its own Wi-Fi Hotspot.
-- [ ] Implement fallback logic: If no known Wi-Fi network is detected on boot, automatically launch the Hotspot.
-- [ ] Update Receiver UI to detect AP mode and display setup instructions ("Connect to Wi-Fi 'PiCaster-Setup'") instead of the standard IP QR code.
-- [ ] Build a Captive Portal web page served by the Node.js app to scan and display available local Wi-Fi networks.
-- [ ] Implement backend endpoint to receive Wi-Fi credentials from the captive portal, save them to the OS, and restart the networking service to connect to the new network.
+- [x] Integrate a network manager tool (e.g., RaspAP or NetworkManager API) to allow the Pi to host its own Wi-Fi Hotspot.
+- [x] Implement fallback logic: If no known Wi-Fi network is detected on boot, automatically launch the Hotspot.
+- [x] Update Receiver UI to detect AP mode and display setup instructions ("Connect to Wi-Fi 'PiCaster-Setup'") instead of the standard IP QR code.
+- [x] Build a Captive Portal web page served by the Node.js app to scan and display available local Wi-Fi networks.
+- [x] Implement backend endpoint to receive Wi-Fi credentials from the captive portal, save them to the OS, and restart the networking service to connect to the new network.
+
+## Phase 8: Advanced Document Handling (.pptx Support)
+- [x] Research and integrate a client-side PowerPoint rendering library (e.g., `PPTXjs`) directly into the frontend.
+- [x] Update the `index.html` file upload validation to natively accept `.pptx` files.
+- [x] Implement canvas/DOM rendering for `.pptx` slides on both the Remote dashboard and the Projector receiver without needing a backend server conversion step.

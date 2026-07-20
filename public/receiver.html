@@ -8,6 +8,12 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/meshesha/PPTXjs@1.21.1/css/pptxjs.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.6/nv.d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/meshesha/PPTXjs@1.21.1/js/pptxjs.min.js"></script>
     <style>
         #pdf-render {
             display: none;
@@ -30,9 +36,29 @@
         </div>
         <video id="remote-video" autoplay playsinline></video>
         <canvas id="pdf-render"></canvas>
+        <div id="pptx-render" style="width: 100%; height: 100%; display: none; background: transparent;"></div>
     </div>
 
     <script>
+        window.FileReaderJS = {
+            setSync: function() {},
+            setupInput: function() {},
+            setupDrop: function() {},
+            setupBlob: function(blob, options) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (options.on && options.on.load) {
+                        options.on.load(e, blob);
+                    }
+                };
+                if (options.readAsDefault === "ArrayBuffer") {
+                    reader.readAsArrayBuffer(blob);
+                } else {
+                    reader.readAsText(blob);
+                }
+            }
+        };
+        
         const socket = io({
             reconnection: true,
             reconnectionAttempts: Infinity,
@@ -96,6 +122,9 @@
             pageIsRendering = false,
             pageNumIsPending = null;
 
+        let isPptx = false;
+        let totalPptxSlides = 1;
+
         // Safely initialize PDF.js
         const pdfJS = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
         if (pdfJS) {
@@ -141,12 +170,49 @@
             resetVideo();
             waitingOverlay.classList.add('hidden');
             remoteVideo.style.display = 'none';
-            pdfCanvas.style.display = 'block';
+            pdfCanvas.style.display = 'none';
+            document.getElementById('pptx-render').style.display = 'none';
 
-            if (pdfJS) {
+            isPptx = data.fileUrl.toLowerCase().endsWith('.pptx');
+            pageNum = data.slide || 1;
+
+            if (isPptx) {
+                const pptxDiv = $('#pptx-render');
+                pptxDiv.empty();
+                pptxDiv.show();
+
+                pptxDiv.pptxToHtml({
+                    pptxFileUrl: data.fileUrl,
+                    slideMode: false,
+                    keyBoardShortCut: false,
+                    slideModeConfig: {
+                        first: 1, 
+                        nav: false,
+                        showPlayPauseBtn: false,
+                        showSlideNum: false, 
+                        showTotalSlideNum: false, 
+                        autoSlide: false, 
+                        randomAutoSlide: false, 
+                        loop: false, 
+                        background: "transparent", 
+                        transition: "default"
+                    }
+                });
+
+                // Poll for slides rendering
+                const checkReady = setInterval(() => {
+                    const slides = $('#pptx-render .slide');
+                    if (slides.length > 0) {
+                        clearInterval(checkReady);
+                        totalPptxSlides = slides.length;
+                        renderPptxSlide(pageNum);
+                    }
+                }, 500);
+
+            } else if (pdfJS) {
+                pdfCanvas.style.display = 'block';
                 pdfJS.getDocument(data.fileUrl).promise.then(doc => {
                     pdfDoc = doc;
-                    pageNum = data.slide || 1;
                     renderPage(pageNum);
                 }).catch(err => {
                     console.error("Error loading PDF", err);
@@ -158,16 +224,32 @@
             }
         });
 
+        const renderPptxSlide = (num) => {
+            const slides = $('#pptx-render .slide');
+            slides.hide();
+            if (slides[num - 1]) {
+                $(slides[num - 1]).show();
+            }
+        };
+
         socket.on('slide-next', () => {
-            if (!pdfDoc || pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            queueRenderPage(pageNum);
+            if (isPptx && pageNum < totalPptxSlides) {
+                pageNum++;
+                renderPptxSlide(pageNum);
+            } else if (!isPptx && pdfDoc && pageNum < pdfDoc.numPages) {
+                pageNum++;
+                queueRenderPage(pageNum);
+            }
         });
 
         socket.on('slide-prev', () => {
-            if (!pdfDoc || pageNum <= 1) return;
-            pageNum--;
-            queueRenderPage(pageNum);
+            if (isPptx && pageNum > 1) {
+                pageNum--;
+                renderPptxSlide(pageNum);
+            } else if (!isPptx && pdfDoc && pageNum > 1) {
+                pageNum--;
+                queueRenderPage(pageNum);
+            }
         });
 
         socket.on('presentation-stop', () => {
@@ -244,8 +326,11 @@
         function resetAll() {
             resetVideo();
             pdfDoc = null;
+            isPptx = false;
             pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
             pdfCanvas.style.display = 'none';
+            document.getElementById('pptx-render').style.display = 'none';
+            $('#pptx-render').empty();
             remoteVideo.style.display = 'block'; // reset to default
             waitingOverlay.classList.remove('hidden');
         }

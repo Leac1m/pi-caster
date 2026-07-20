@@ -47,12 +47,24 @@ test.describe('Document Presentation with Remote Preview', () => {
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
     await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
-    // 6. Test slide navigation
-    // Click Next on Remote
-    await senderPage.locator('#btn-next').click();
+    // 6. Test accidental refresh recovery (No slide-next because dummy PDF is 1 page)
     
-    // Click Previous on Remote
-    await senderPage.locator('#btn-prev').click();
+    // Simulate accidental refresh on the Remote
+    await senderPage.reload();
+    await expect(senderPage.locator('.remote-header h2')).toContainText('Remote Control');
+    
+    // Verify Remote instantly recovers the preview
+    await expect(senderPage.locator('#preview-loading')).toBeHidden();
+    await expect(senderPage.locator('#pdf-preview')).toBeVisible();
+
+    // Verify Receiver was NOT stopped by the disconnect
+    await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
+
+    // Simulate accidental crash/refresh on the Receiver (Projector)
+    await receiverPage.reload();
+    await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // 7. Test stopping presentation
     await senderPage.locator('#btn-stop').click();

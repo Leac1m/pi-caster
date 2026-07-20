@@ -109,7 +109,7 @@
                 
                 pdfJS.getDocument(data.fileUrl).promise.then(doc => {
                     pdfDoc = doc;
-                    pageNum = 1; // Always assume server starts at 1
+                    pageNum = data.slide || 1; // Start at the server's current slide
                     renderPage(pageNum);
                 }).catch(err => {
                     console.error("Error loading PDF preview", err);

@@ -37,6 +37,7 @@ let receiverSocketId = null;
 let activePresentationPath = null;
 let activePresentationUrl = null;
 let remoteSocketId = null;
+let currentSlide = 1;
 
 // Local IP Route
 app.get('/api/ip', (req, res) => {
@@ -101,9 +102,10 @@ app.post('/upload', upload.single('presentation'), (req, res) => {
 
     activePresentationPath = req.file.path;
     activePresentationUrl = `/uploads/${req.file.filename}`;
+    currentSlide = 1;
 
     // Notify receiver and any already connected remotes
-    io.emit('presentation-start', { fileUrl: activePresentationUrl });
+    io.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
 
     res.json({ success: true, fileUrl: activePresentationUrl });
 });
@@ -115,22 +117,27 @@ io.on('connection', (socket) => {
         receiverSocketId = socket.id;
         console.log('Receiver registered:', socket.id);
         socket.broadcast.emit('receiver-ready');
+        if (activePresentationUrl) {
+            socket.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
+        }
     });
 
     socket.on('register-remote', () => {
         remoteSocketId = socket.id;
         console.log('Remote registered:', socket.id);
         if (activePresentationUrl) {
-            socket.emit('presentation-start', { fileUrl: activePresentationUrl });
+            socket.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
         }
     });
 
     // Presentation Control Events
     socket.on('slide-next', () => {
+        currentSlide++;
         if (receiverSocketId) io.to(receiverSocketId).emit('slide-next');
     });
 
     socket.on('slide-prev', () => {
+        if (currentSlide > 1) currentSlide--;
         if (receiverSocketId) io.to(receiverSocketId).emit('slide-prev');
     });
 
@@ -168,9 +175,10 @@ io.on('connection', (socket) => {
         }
         if (socket.id === remoteSocketId) {
             remoteSocketId = null;
-            console.log('Remote disconnected, stopping presentation');
-            if (receiverSocketId) io.to(receiverSocketId).emit('presentation-stop');
-            purgePresentation();
+            console.log('Remote disconnected');
+            // We intentionally do NOT purge the presentation here.
+            // This protects against accidental refreshes on the mobile device.
+            // The file will be cleaned up on the next upload or explicit stop.
         }
     });
 });

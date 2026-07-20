@@ -146,7 +146,7 @@
             if (pdfJS) {
                 pdfJS.getDocument(data.fileUrl).promise.then(doc => {
                     pdfDoc = doc;
-                    pageNum = 1;
+                    pageNum = data.slide || 1;
                     renderPage(pageNum);
                 }).catch(err => {
                     console.error("Error loading PDF", err);

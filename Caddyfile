@@ -6,7 +6,7 @@
     redir https://{host}{uri}
 }
 
-localhost {
+localhost, :443 {
     tls internal
     reverse_proxy {$APP_HOST:app}:3000
 }

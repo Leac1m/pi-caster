@@ -1,10 +1,10 @@
 services:
   app:
     network_mode: "host"
-    ports: []
+    ports: !reset []
 
   proxy:
     network_mode: "host"
-    ports: []
+    ports: !reset []
     environment:
       - APP_HOST=127.0.0.1

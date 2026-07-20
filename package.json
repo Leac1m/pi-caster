@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "NODE_ENV=test node --test"
+    "test:api": "NODE_ENV=test node --test",
+    "test:e2e": "playwright test",
+    "test": "npm run test:api && npm run test:e2e"
   },
   "dependencies": {
     "express": "^4.19.0",
@@ -17,6 +19,7 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2"
   }

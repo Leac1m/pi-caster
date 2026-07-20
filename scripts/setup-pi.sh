@@ -43,12 +43,25 @@ sudo apt-get update && sudo apt-get install -y hostapd dnsmasq network-manager
 sudo systemctl stop hostapd
 sudo systemctl stop dnsmasq
 
-echo "Configuring static IP for wlan0..."
-cat <<EOF | sudo tee /etc/dhcpcd.conf
-interface wlan0
-    static ip_address=10.42.0.1/24
-    nohook wpa_supplicant
+echo "Telling NetworkManager to ignore wlan0..."
+sudo mkdir -p /etc/NetworkManager/conf.d
+cat <<EOF | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-devices.conf
+[keyfile]
+unmanaged-devices=interface-name:wlan0
 EOF
+sudo systemctl restart NetworkManager
+
+echo "Configuring static IP for wlan0 via systemd-networkd..."
+cat <<EOF | sudo tee /etc/systemd/network/10-wlan0.network
+[Match]
+Name=wlan0
+
+[Network]
+Address=10.42.0.1/24
+DHCPServer=no
+EOF
+sudo systemctl enable systemd-networkd
+sudo systemctl restart systemd-networkd
 
 echo "Configuring dnsmasq for DHCP and Captive Portal DNS spoofing..."
 sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig 2>/dev/null || true
@@ -84,7 +97,6 @@ EOF
 sudo systemctl unmask hostapd
 sudo systemctl enable hostapd
 sudo systemctl enable dnsmasq
-sudo systemctl restart dhcpcd
 sudo systemctl start hostapd
 sudo systemctl start dnsmasq
 

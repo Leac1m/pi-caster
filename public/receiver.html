@@ -6,14 +6,14 @@
     <title>PiProjector - Receiver</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/meshesha/PPTXjs@1.21.1/css/pptxjs.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.6/nv.d3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/meshesha/PPTXjs@1.21.1/js/pptxjs.min.js"></script>
+    <script src="/vendor/pdf.min.js"></script>
+    <script src="/vendor/qrcode.min.js"></script>
+    <link rel="stylesheet" href="/vendor/pptxjs.css">
+    <script src="/vendor/jquery.min.js"></script>
+    <script src="/vendor/jszip.min.js"></script>
+    <script src="/vendor/d3.min.js"></script>
+    <script src="/vendor/nv.d3.min.js"></script>
+    <script src="/vendor/pptxjs.min.js"></script>
     <style>
         #pdf-render {
             display: none;
@@ -120,7 +120,7 @@
         // Safely initialize PDF.js
         const pdfJS = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
         if (pdfJS) {
-            pdfJS.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            pdfJS.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.min.js';
         } else {
             console.error("PDF.js failed to load from CDN.");
         }

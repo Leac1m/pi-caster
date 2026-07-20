@@ -72,13 +72,24 @@ Once the script finishes, reboot your Raspberry Pi:
 sudo reboot
 ```
 
-## 6. Usage
+## 6. Usage & Wi-Fi Provisioning (Captive Portal)
 
-Upon rebooting, your Raspberry Pi should automatically open Chromium in full-screen mode showing the "PiProjector is Ready" screen.
+PiCaster includes a smart Network Provisioning system for easy deployment in new environments.
 
-A **QR Code** will be generated and displayed on the screen. Anyone on the same Wi-Fi network can scan this QR code with their mobile device to instantly open the remote dashboard and begin uploading presentations or sharing their screen!
+### Normal Operation
+If the Raspberry Pi detects a known Wi-Fi network (or is plugged into Ethernet), it will connect automatically. 
+Upon booting, Chromium will open and display the "PiProjector is Ready" screen with a **QR Code**. Anyone on the same network can scan this QR code to instantly open the remote dashboard and begin sharing.
+
+### Captive Portal (Setup Mode)
+If you move the Raspberry Pi to a new room/building where it does not know the Wi-Fi credentials:
+1. After 10 seconds of failing to reach the internet, the Pi will automatically host its own temporary Wi-Fi Hotspot named **`PiCaster-Setup`** (Password: `picaster`).
+2. The projector screen will detect this and hide the QR code, instead displaying instructions to connect to this setup network.
+3. Connect your phone or laptop to `PiCaster-Setup` and navigate to `http://10.42.0.1`.
+4. You will see the **PiCaster Setup** page. Select the room's Wi-Fi network from the dropdown, enter the password, and hit Connect.
+5. The Pi will securely save these credentials, disable its hotspot, and connect to the room's Wi-Fi. The screen will automatically refresh with the standard QR code.
 
 ### Troubleshooting
 - **Containers aren't starting**: Run `docker ps` to ensure the `app` and `proxy` containers are running. Check logs with `docker-compose logs`.
 - **Browser doesn't auto-start**: If you are using a custom OS or desktop environment, you may need to manually add `chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver.html` to your specific session autostart configuration.
 - **Cannot scan QR Code**: Ensure your mobile device is connected to the exact same local network as the Raspberry Pi.
+- **Hotspot isn't showing up**: Ensure `NetworkManager` is installed on the OS and managing your `wlan0` interface.

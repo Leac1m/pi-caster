@@ -22,7 +22,7 @@ test.describe('Captive Portal & Hotspot logic', () => {
     });
 
     // 3. Go to index and verify the Captive Portal UI loads instead of normal cards
-    await page.goto('/index.html');
+    await page.goto('/index');
     await expect(page.locator('h1')).toHaveText('PiCaster Setup');
     await expect(page.locator('#wifi-select')).toContainText('Playwright_Network');
 
@@ -54,7 +54,7 @@ test.describe('Captive Portal & Hotspot logic', () => {
       });
     });
 
-    await page.goto('/receiver.html');
+    await page.goto('/receiver');
     await expect(page.locator('#waiting-overlay h1')).toHaveText('Network Setup Required');
     // Ensure QR code container is hidden
     await expect(page.locator('#qrcode')).toBeHidden();

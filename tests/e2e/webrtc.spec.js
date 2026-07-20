@@ -10,14 +10,14 @@ test.describe('WebRTC Screen Sharing', () => {
     const senderPage = await senderContext.newPage();
 
     // 2. Open Receiver and ensure it connects
-    await receiverPage.goto('/receiver.html');
+    await receiverPage.goto('/receiver');
     await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
     
     // The video element exists but is empty initially
     const remoteVideo = receiverPage.locator('#remote-video');
 
     // 3. Open Sender
-    await senderPage.goto('/sender.html');
+    await senderPage.goto('/sender');
     await expect(senderPage.locator('#status-label')).toContainText('Ready to share');
 
     // 4. Initiate Screen Share

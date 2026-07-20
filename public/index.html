@@ -23,12 +23,12 @@
             <div class="card">
                 <h3>Live Screen</h3>
                 <p>Mirror your display</p>
-                <a href="sender.html" class="btn secondary-btn">Share Screen</a>
+                <a href="sender" class="btn secondary-btn">Share Screen</a>
             </div>
         </div>
 
         <div style="margin-top: 2rem;">
-            <a href="receiver.html" class="status-text" style="color: rgba(255,255,255,0.5); text-decoration: none;">Open Projector Display (Receiver)</a>
+            <a href="receiver" class="status-text" style="color: rgba(255,255,255,0.5); text-decoration: none;">Open Projector Display (Receiver)</a>
         </div>
     </div>
 
@@ -118,7 +118,7 @@
                 if (data.success) {
                     uploadStatus.textContent = 'Success! Redirecting...';
                     setTimeout(() => {
-                        window.location.href = 'remote.html';
+                        window.location.href = 'remote';
                     }, 500);
                 } else {
                     uploadStatus.textContent = 'Upload failed.';

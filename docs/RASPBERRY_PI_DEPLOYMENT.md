@@ -63,7 +63,7 @@ chmod +x scripts/setup-pi.sh
 **What the script does:**
 1. **Docker Service**: Enables and starts the Docker systemd service.
 2. **Container Spin-up**: Runs `docker-compose up -d` to build and start the PiCaster containers.
-3. **Kiosk Mode Config**: Detects whether your Pi is using Wayland (Wayfire) or X11 (LXDE) and writes the appropriate configuration to launch `chromium-browser` in full-screen incognito mode pointing to `https://localhost/receiver.html`.
+3. **Kiosk Mode Config**: Detects whether your Pi is using Wayland (Wayfire) or X11 (LXDE) and writes the appropriate configuration to launch `chromium-browser` in full-screen incognito mode pointing to `https://localhost/receiver`.
 
 ## 5. Reboot
 
@@ -90,6 +90,6 @@ If you move the Raspberry Pi to a new room/building where it does not know the W
 
 ### Troubleshooting
 - **Containers aren't starting**: Run `docker ps` to ensure the `app` and `proxy` containers are running. Check logs with `docker-compose logs`.
-- **Browser doesn't auto-start**: If you are using a custom OS or desktop environment, you may need to manually add `chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver.html` to your specific session autostart configuration.
+- **Browser doesn't auto-start**: If you are using a custom OS or desktop environment, you may need to manually add `chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver` to your specific session autostart configuration.
 - **Cannot scan QR Code**: Ensure your mobile device is connected to the exact same local network as the Raspberry Pi.
 - **Hotspot isn't showing up**: Ensure `NetworkManager` is installed on the OS and managing your `wlan0` interface.

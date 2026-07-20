@@ -47,3 +47,10 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 - [x] Research and integrate a client-side PowerPoint rendering library (e.g., `PPTXjs`) directly into the frontend.
 - [x] Update the `index.html` file upload validation to natively accept `.pptx` files.
 - [x] Implement canvas/DOM rendering for `.pptx` slides on both the Remote dashboard and the Projector receiver without needing a backend server conversion step.
+
+## Phase 9: Standalone Network Mode (Pi as Primary Router)
+- [ ] Configure the Pi to always broadcast its own Wi-Fi Access Point (Hotspot) immediately on boot, acting as the primary LAN.
+- [ ] Implement a DNS Server (e.g., `dnsmasq`) on the Pi to route all DNS queries to the Pi's IP address, triggering OS-level Captive Portal detection on client devices.
+- [ ] Update the Receiver UI to display a single "Join Wi-Fi" QR Code that automatically connects the user's phone/laptop to the Pi's Hotspot (using the `WIFI:T:WPA;S:...` format).
+- [ ] Serve the PiCaster Sender web application directly within the Captive Portal pop-up window, enabling instant, zero-configuration screen casting.
+- [ ] Remove or adapt the legacy Phase 7 fallback logic, as the Pi is now the permanent network provider.

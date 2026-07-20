@@ -87,31 +87,23 @@
                     const qrContainer = document.getElementById('qrcode');
                     const ipText = document.getElementById('ip-text');
                     
-                    if (data.isHotspot) {
-                        titleText.textContent = "Network Setup Required";
-                        subtitleText.innerHTML = "1. Connect your Wi-Fi to <b>PiCaster-Setup</b><br>2. Navigate to <b>http://10.42.0.1</b>";
-                        qrContainer.style.display = 'none';
-                        ipText.style.display = 'none';
-                    } else {
-                        titleText.textContent = "PiProjector is Ready";
-                        subtitleText.textContent = "Waiting for a connection or presentation...";
-                        
-                        const port = window.location.port ? ':' + window.location.port : '';
-                        const url = `https://${data.ip}/`;
-                        
-                        ipText.textContent = `Connect at: ${url}`;
-                        ipText.style.display = 'block';
-                        qrContainer.style.display = 'block';
-                        qrContainer.innerHTML = '';
-                        new QRCode(qrContainer, {
-                            text: url,
-                            width: 150,
-                            height: 150,
-                            colorDark : "#000000",
-                            colorLight : "#ffffff",
-                            correctLevel : QRCode.CorrectLevel.H
-                        });
-                    }
+                    titleText.textContent = "PiProjector is Ready";
+                    subtitleText.textContent = "Scan to join PiCaster Wi-Fi and start casting";
+                    
+                    const wifiPayload = "WIFI:T:WPA;S:PiCaster;P:picaster2026;;";
+                    
+                    ipText.textContent = "Or manually join 'PiCaster' Wi-Fi (Password: picaster2026)";
+                    ipText.style.display = 'block';
+                    qrContainer.style.display = 'block';
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: wifiPayload,
+                        width: 250,
+                        height: 250,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
                 })
                 .catch(err => console.error('Failed to get IP for QR code', err));
         });

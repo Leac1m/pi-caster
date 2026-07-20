@@ -3,10 +3,18 @@
 }
 
 :80 {
-    redir https://{host}{uri}
+    @captive {
+        not host localhost 10.42.0.1 picaster.local
+    }
+    redir @captive http://10.42.0.1/sender 302
+
+    @local {
+        host localhost 10.42.0.1 picaster.local
+    }
+    redir @local https://{host}{uri}
 }
 
-localhost, :443 {
+localhost, 10.42.0.1, picaster.local, :443 {
     tls internal
     reverse_proxy {$APP_HOST:app}:3000
 }

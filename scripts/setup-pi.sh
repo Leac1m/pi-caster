@@ -35,30 +35,68 @@ else
     sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 fi
 
-# 1.5 Setup AP Fallback Service
-echo "Installing dependencies and setting up AP Fallback service..."
-sudo apt-get update && sudo apt-get install -y jq network-manager
-sudo cp scripts/ap-fallback.sh /usr/local/bin/picaster-ap-fallback
-sudo chmod +x /usr/local/bin/picaster-ap-fallback
+# 1.5 Setup Standalone Access Point (Phase 9)
+echo "Installing hostapd and dnsmasq..."
+sudo apt-get update && sudo apt-get install -y hostapd dnsmasq network-manager
 
-cat <<EOF | sudo tee /etc/systemd/system/picaster-ap.service
-[Unit]
-Description=PiCaster AP Fallback Manager
-After=network.target docker.service
+# Stop services before configuration
+sudo systemctl stop hostapd
+sudo systemctl stop dnsmasq
 
-[Service]
-ExecStart=/usr/local/bin/picaster-ap-fallback
-Restart=always
-User=root
-WorkingDirectory=$(pwd)
-
-[Install]
-WantedBy=multi-user.target
+echo "Configuring static IP for wlan0..."
+cat <<EOF | sudo tee /etc/dhcpcd.conf
+interface wlan0
+    static ip_address=10.42.0.1/24
+    nohook wpa_supplicant
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable picaster-ap.service
-sudo systemctl start picaster-ap.service
+echo "Configuring dnsmasq for DHCP and Captive Portal DNS spoofing..."
+sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig 2>/dev/null || true
+cat <<EOF | sudo tee /etc/dnsmasq.conf
+interface=wlan0
+dhcp-range=10.42.0.10,10.42.0.100,255.255.255.0,24h
+# Wildcard DNS to trigger captive portal
+address=/#/10.42.0.1
+EOF
+
+echo "Configuring hostapd..."
+cat <<EOF | sudo tee /etc/hostapd/hostapd.conf
+interface=wlan0
+driver=nl80211
+ssid=PiCaster
+hw_mode=g
+channel=6
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=picaster2026
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+EOF
+
+cat <<EOF | sudo tee /etc/default/hostapd
+DAEMON_CONF="/etc/hostapd/hostapd.conf"
+EOF
+
+sudo systemctl unmask hostapd
+sudo systemctl enable hostapd
+sudo systemctl enable dnsmasq
+sudo systemctl restart dhcpcd
+sudo systemctl start hostapd
+sudo systemctl start dnsmasq
+
+# Cleanup legacy AP fallback if exists
+if [ -f "/etc/systemd/system/picaster-ap.service" ]; then
+    echo "Removing legacy AP Fallback service..."
+    sudo systemctl stop picaster-ap.service
+    sudo systemctl disable picaster-ap.service
+    sudo rm /etc/systemd/system/picaster-ap.service
+    sudo rm /usr/local/bin/picaster-ap-fallback
+    sudo systemctl daemon-reload
+fi
 
 # 2. Configure Chromium Kiosk Mode
 echo "Configuring Chromium Kiosk Mode..."

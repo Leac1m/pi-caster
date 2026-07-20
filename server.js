@@ -35,6 +35,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 let receiverSocketId = null;
 let activePresentationPath = null;
+let activePresentationUrl = null;
 let remoteSocketId = null;
 
 // Local IP Route
@@ -99,14 +100,12 @@ app.post('/upload', upload.single('presentation'), (req, res) => {
     purgePresentation();
 
     activePresentationPath = req.file.path;
-    const fileUrl = `/uploads/${req.file.filename}`;
+    activePresentationUrl = `/uploads/${req.file.filename}`;
 
-    // Notify receiver
-    if (receiverSocketId) {
-        io.to(receiverSocketId).emit('presentation-start', { fileUrl });
-    }
+    // Notify receiver and any already connected remotes
+    io.emit('presentation-start', { fileUrl: activePresentationUrl });
 
-    res.json({ success: true, fileUrl });
+    res.json({ success: true, fileUrl: activePresentationUrl });
 });
 
 io.on('connection', (socket) => {
@@ -121,6 +120,9 @@ io.on('connection', (socket) => {
     socket.on('register-remote', () => {
         remoteSocketId = socket.id;
         console.log('Remote registered:', socket.id);
+        if (activePresentationUrl) {
+            socket.emit('presentation-start', { fileUrl: activePresentationUrl });
+        }
     });
 
     // Presentation Control Events

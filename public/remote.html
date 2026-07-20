@@ -6,17 +6,26 @@
     <title>PiProjector Remote</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body class="landing-body" style="align-items: stretch; margin: 0; padding: 0;">
-    <div class="remote-container">
-        <header class="remote-header">
+    <div class="remote-container" style="display: flex; flex-direction: column; height: 100vh;">
+        <header class="remote-header" style="flex: 0 0 auto;">
             <h2>Remote Control</h2>
             <button id="btn-stop" class="btn danger-btn">Stop</button>
         </header>
         
-        <div class="remote-controls">
-            <button id="btn-prev" class="btn secondary-btn control-btn">Previous</button>
-            <button id="btn-next" class="btn primary-btn control-btn">Next</button>
+        <div class="remote-controls" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 10px;">
+            <button id="btn-prev" class="btn secondary-btn control-btn" style="flex: 0 0 60px; min-height: 60px; font-size: 1.1em; border-radius: 12px;">Previous</button>
+            
+            <div id="preview-wrapper" style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 15px 0; background: rgba(0,0,0,0.2); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                    <canvas id="pdf-preview" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); display: none;"></canvas>
+                    <p id="preview-loading" style="color: rgba(255,255,255,0.5); margin: 0;">Loading Preview...</p>
+                </div>
+            </div>
+            
+            <button id="btn-next" class="btn primary-btn control-btn" style="flex: 0 0 100px; min-height: 100px; font-size: 1.4em; border-radius: 16px; margin-bottom: 20px;">Next</button>
         </div>
     </div>
 
@@ -29,6 +38,55 @@
         });
 
         const headerTitle = document.querySelector('.remote-header h2');
+        const pdfCanvas = document.getElementById('pdf-preview');
+        const pdfCtx = pdfCanvas.getContext('2d');
+        const loadingText = document.getElementById('preview-loading');
+
+        // PDF State
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null;
+
+        const pdfJS = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (pdfJS) {
+            pdfJS.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+
+        const renderPage = num => {
+            if (!pdfDoc) return;
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 1.5 });
+                pdfCanvas.height = viewport.height;
+                pdfCanvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: pdfCtx,
+                    viewport: viewport
+                };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+                    loadingText.style.display = 'none';
+                    pdfCanvas.style.display = 'block';
+
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+            });
+        };
+
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
 
         socket.on('connect', () => {
             headerTitle.textContent = 'Remote Control';
@@ -43,13 +101,37 @@
             headerTitle.textContent = 'Reconnecting...';
         });
 
+        socket.on('presentation-start', (data) => {
+            if (pdfJS) {
+                loadingText.style.display = 'block';
+                pdfCanvas.style.display = 'none';
+                
+                pdfJS.getDocument(data.fileUrl).promise.then(doc => {
+                    pdfDoc = doc;
+                    pageNum = 1; // Always assume server starts at 1
+                    renderPage(pageNum);
+                }).catch(err => {
+                    console.error("Error loading PDF preview", err);
+                    loadingText.textContent = "Preview unavailable";
+                });
+            }
+        });
+
         document.getElementById('btn-next').addEventListener('click', () => {
             socket.emit('slide-next');
+            if (pdfDoc && pageNum < pdfDoc.numPages) {
+                pageNum++;
+                queueRenderPage(pageNum);
+            }
             if(navigator.vibrate) navigator.vibrate(50);
         });
 
         document.getElementById('btn-prev').addEventListener('click', () => {
             socket.emit('slide-prev');
+            if (pdfDoc && pageNum > 1) {
+                pageNum--;
+                queueRenderPage(pageNum);
+            }
             if(navigator.vibrate) navigator.vibrate(50);
         });
 

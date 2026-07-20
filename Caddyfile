@@ -1,12 +1,8 @@
-{
-    default_sni 10.1.1.108
-}
-
 :80 {
     redir https://{host}{uri}
 }
 
-10.1.1.108, localhost {
+:443 {
     tls internal
-    reverse_proxy app:3000
+    reverse_proxy {$APP_HOST:app}:3000
 }

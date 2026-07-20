@@ -11,7 +11,11 @@ sudo systemctl start docker
 
 # Start the docker containers
 echo "Starting PiCaster docker containers..."
-sudo docker-compose up -d
+if command -v docker-compose &> /dev/null; then
+    sudo docker-compose up -d
+else
+    sudo docker compose up -d
+fi
 
 # 1.5 Setup AP Fallback Service
 echo "Installing dependencies and setting up AP Fallback service..."

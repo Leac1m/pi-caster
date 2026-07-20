@@ -4,19 +4,19 @@
 
 http:// {
     @captive {
-        not host localhost 10.42.0.1 picaster.local
+        not host localhost 10.42.0.1 picaster.local cast.pi
     }
-    redir @captive http://10.42.0.1/sender 302
+    redir @captive http://10.42.0.1/captive.html 302
 
     @local {
-        host localhost 10.42.0.1 picaster.local
+        host localhost 10.42.0.1 picaster.local cast.pi
     }
     handle @local {
         reverse_proxy {$APP_HOST:app}:3000
     }
 }
 
-https://localhost, https://10.42.0.1, https://picaster.local {
+https://localhost, https://10.42.0.1, https://picaster.local, https://cast.pi {
     tls internal
     reverse_proxy {$APP_HOST:app}:3000
 }

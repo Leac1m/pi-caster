@@ -69,10 +69,7 @@
             }
         });
 
-        // Mobile / Captive Portal constraint check
-        const isCaptivePortal = /CaptiveNetwork/i.test(navigator.userAgent) || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.captivePortal);
-        
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || isCaptivePortal) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
             const liveScreenCard = document.querySelectorAll('.card')[1];
             if (liveScreenCard) {
                 const shareBtn = liveScreenCard.querySelector('.btn');
@@ -81,25 +78,7 @@
                 msg.style.color = '#ff6b6b';
                 msg.style.fontSize = '0.85em';
                 msg.style.marginTop = '10px';
-                
-                if (isCaptivePortal) {
-                    msg.innerHTML = '<b>Captive Portal Detected.</b><br>To share your screen, please open Safari/Chrome and navigate to:<br><b>https://10.42.0.1</b>';
-                    
-                    // Add the same warning to Document Upload since file uploads can be buggy in captive portals
-                    const uploadCard = document.querySelectorAll('.card')[0];
-                    if (uploadCard) {
-                        const uploadBtn = uploadCard.querySelector('.btn');
-                        if (uploadBtn) uploadBtn.style.display = 'none';
-                        const uploadMsg = document.createElement('p');
-                        uploadMsg.style.color = '#ff6b6b';
-                        uploadMsg.style.fontSize = '0.85em';
-                        uploadMsg.style.marginTop = '10px';
-                        uploadMsg.innerHTML = '<b>Captive Portal Detected.</b><br>To upload presentations, please open Safari/Chrome and navigate to:<br><b>https://10.42.0.1</b>';
-                        uploadCard.appendChild(uploadMsg);
-                    }
-                } else {
-                    msg.textContent = 'Screen mirroring requires a desktop/laptop browser.';
-                }
+                msg.textContent = 'Screen mirroring requires a desktop/laptop browser.';
                 liveScreenCard.appendChild(msg);
             }
         }

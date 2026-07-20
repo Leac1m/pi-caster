@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected to PiCaster</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+        h1 {
+            color: #4facfe;
+            margin-top: 0;
+        }
+        .domain-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.5em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 20px 0;
+            color: #00f2fe;
+            user-select: all;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .instructions {
+            opacity: 0.8;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wi-Fi Connected!</h1>
+        <p class="instructions">You have successfully joined the PiCaster network. To start presenting, please open Safari or Chrome and navigate to:</p>
+        
+        <div class="domain-box">cast.pi</div>
+        
+        <p class="instructions" style="font-size: 0.9em; margin-top: 30px;">
+            If your device supports it, you can tap the button below to launch your browser automatically.
+        </p>
+        
+        <a href="http://cast.pi" target="_blank" class="btn">Open cast.pi</a>
+    </div>
+</body>
+</html>

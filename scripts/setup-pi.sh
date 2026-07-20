@@ -8,9 +8,19 @@ echo "Starting PiCaster Raspberry Pi Setup..."
 echo "Checking and installing prerequisites..."
 sudo apt-get update
 
-if ! command -v chromium-browser &> /dev/null; then
+# Find correct Chromium command (varies between Pi OS versions)
+if command -v chromium-browser &> /dev/null; then
+    CHROMIUM_CMD="chromium-browser"
+elif command -v chromium &> /dev/null; then
+    CHROMIUM_CMD="chromium"
+else
     echo "Installing Chromium Browser..."
     sudo apt-get install -y chromium-browser
+    if command -v chromium-browser &> /dev/null; then
+        CHROMIUM_CMD="chromium-browser"
+    else
+        CHROMIUM_CMD="chromium"
+    fi
 fi
 
 if ! command -v docker &> /dev/null; then
@@ -119,8 +129,8 @@ if [ -d "$HOME/.config/wayfire" ] || [ -f "$HOME/.config/wayfire.ini" ]; then
     mkdir -p $HOME/.config
     WAYFIRE_INI="$HOME/.config/wayfire.ini"
     
-    if ! grep -q "chromium-browser" "$WAYFIRE_INI" 2>/dev/null; then
-        echo -e "\n[autostart]\nchromium = chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$WAYFIRE_INI"
+    if ! grep -q "$CHROMIUM_CMD" "$WAYFIRE_INI" 2>/dev/null; then
+        echo -e "\n[autostart]\nchromium = $CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$WAYFIRE_INI"
         echo "Added Chromium to Wayfire autostart."
     else
         echo "Chromium autostart already configured in Wayfire."
@@ -130,11 +140,11 @@ elif [ -d "$HOME/.config/lxsession/LXDE-pi" ]; then
     echo "X11 (LXDE) detected."
     AUTOSTART="$HOME/.config/lxsession/LXDE-pi/autostart"
     
-    if ! grep -q "chromium-browser" "$AUTOSTART" 2>/dev/null; then
+    if ! grep -q "$CHROMIUM_CMD" "$AUTOSTART" 2>/dev/null; then
         echo "@xset s off" >> "$AUTOSTART"
         echo "@xset -dpms" >> "$AUTOSTART"
         echo "@xset s noblank" >> "$AUTOSTART"
-        echo "@chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$AUTOSTART"
+        echo "@$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$AUTOSTART"
         echo "Added Chromium to LXDE autostart."
     else
         echo "Chromium autostart already configured in LXDE."
@@ -142,7 +152,7 @@ elif [ -d "$HOME/.config/lxsession/LXDE-pi" ]; then
 else
     echo "Warning: Could not detect Wayfire or LXDE configuration directories."
     echo "Please manually configure your desktop environment to auto-start Chromium:"
-    echo "chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver"
+    echo "$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver"
 fi
 
 echo "Setup complete! Please restart your Raspberry Pi to verify the kiosk mode."

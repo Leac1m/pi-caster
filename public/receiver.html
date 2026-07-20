@@ -361,6 +361,15 @@
             remoteVideo.style.display = 'block'; // reset to default
             waitingOverlay.classList.remove('hidden');
         }
+
+        // Add keyboard shortcut to exit kiosk mode
+        document.addEventListener('keydown', (e) => {
+            // Ctrl + Shift + Esc
+            if (e.ctrlKey && e.shiftKey && e.key === 'Escape') {
+                console.log("Exit kiosk mode shortcut triggered.");
+                window.close();
+            }
+        });
     </script>
 </body>
 </html>

@@ -13,6 +13,31 @@ sudo systemctl start docker
 echo "Starting PiCaster docker containers..."
 sudo docker-compose up -d
 
+# 1.5 Setup AP Fallback Service
+echo "Installing dependencies and setting up AP Fallback service..."
+sudo apt-get update && sudo apt-get install -y jq network-manager
+sudo cp scripts/ap-fallback.sh /usr/local/bin/picaster-ap-fallback
+sudo chmod +x /usr/local/bin/picaster-ap-fallback
+
+cat <<EOF | sudo tee /etc/systemd/system/picaster-ap.service
+[Unit]
+Description=PiCaster AP Fallback Manager
+After=network.target docker.service
+
+[Service]
+ExecStart=/usr/local/bin/picaster-ap-fallback
+Restart=always
+User=root
+WorkingDirectory=$(pwd)
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable picaster-ap.service
+sudo systemctl start picaster-ap.service
+
 # 2. Configure Chromium Kiosk Mode
 echo "Configuring Chromium Kiosk Mode..."
 

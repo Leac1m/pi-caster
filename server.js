@@ -29,6 +29,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -40,16 +41,52 @@ let remoteSocketId = null;
 app.get('/api/ip', (req, res) => {
     const interfaces = os.networkInterfaces();
     let localIp = 'localhost';
+    let isHotspot = false;
     for (const name of Object.keys(interfaces)) {
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
                 localIp = iface.address;
+                if (localIp === '10.42.0.1') {
+                    isHotspot = true;
+                }
                 break;
             }
         }
         if (localIp !== 'localhost') break;
     }
-    res.json({ ip: localIp });
+    res.json({ ip: localIp, isHotspot: isHotspot });
+});
+
+// Captive Portal Wi-Fi Scan
+app.get('/api/wifi/scan', (req, res) => {
+    const scanFile = path.join(__dirname, 'wifi-scan-results.json');
+    if (fs.existsSync(scanFile)) {
+        try {
+            const data = fs.readFileSync(scanFile, 'utf8');
+            res.json({ success: true, networks: JSON.parse(data) });
+        } catch (e) {
+            res.json({ success: false, networks: [], error: 'Failed to parse scan results' });
+        }
+    } else {
+        res.json({ success: false, networks: [], error: 'Scan results not available yet' });
+    }
+});
+
+// Captive Portal Wi-Fi Connect
+app.post('/api/wifi/connect', (req, res) => {
+    const { ssid, password } = req.body;
+    if (!ssid) {
+        return res.status(400).json({ success: false, error: 'SSID required' });
+    }
+    
+    const credsFile = path.join(__dirname, 'wifi-credentials.json');
+    try {
+        fs.writeFileSync(credsFile, JSON.stringify({ ssid, password }));
+        res.json({ success: true, message: 'Credentials saved. Applying new network configuration...' });
+    } catch (e) {
+        console.error("Failed to write wifi credentials:", e);
+        res.status(500).json({ success: false, error: 'Failed to save credentials' });
+    }
 });
 
 // File Upload Route

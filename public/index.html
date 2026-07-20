@@ -35,6 +35,66 @@
     <script>
         const fileInput = document.getElementById('file-input');
         const uploadStatus = document.getElementById('upload-status');
+        const cardGroup = document.querySelector('.card-group');
+
+        // Check if we are in Setup Mode (AP)
+        fetch('/api/ip')
+            .then(res => res.json())
+            .then(data => {
+                if (data.isHotspot) {
+                    document.querySelector('h1').textContent = 'PiCaster Setup';
+                    document.querySelector('p').textContent = 'Connect to your local Wi-Fi network';
+                    
+                    cardGroup.innerHTML = `
+                        <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
+                            <h3>Wi-Fi Networks</h3>
+                            <select id="wifi-select" class="btn" style="background: rgba(255,255,255,0.1); width: 100%; margin-bottom: 10px; padding: 10px; color: white;">
+                                <option>Scanning...</option>
+                            </select>
+                            <input type="password" id="wifi-password" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: none;" />
+                            <button id="wifi-connect-btn" class="btn primary-btn" style="width: 100%;">Connect</button>
+                            <div id="wifi-status" style="margin-top: 10px; font-size: 0.9em; color: #a8e6cf;"></div>
+                        </div>
+                    `;
+
+                    // Fetch networks
+                    const fetchNetworks = () => {
+                        fetch('/api/wifi/scan')
+                            .then(r => r.json())
+                            .then(scanData => {
+                                const select = document.getElementById('wifi-select');
+                                if (scanData.success && scanData.networks.length > 0) {
+                                    select.innerHTML = scanData.networks.map(ssid => `<option value="${ssid}">${ssid}</option>`).join('');
+                                } else {
+                                    select.innerHTML = '<option>No networks found...</option>';
+                                    setTimeout(fetchNetworks, 5000); // Retry scanning
+                                }
+                            });
+                    };
+                    fetchNetworks();
+
+                    document.getElementById('wifi-connect-btn').addEventListener('click', () => {
+                        const ssid = document.getElementById('wifi-select').value;
+                        const password = document.getElementById('wifi-password').value;
+                        const status = document.getElementById('wifi-status');
+                        
+                        status.textContent = 'Saving...';
+                        fetch('/api/wifi/connect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ssid, password })
+                        })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) {
+                                status.textContent = res.message;
+                            } else {
+                                status.textContent = res.error;
+                            }
+                        });
+                    });
+                }
+            });
 
         fileInput.addEventListener('change', async (e) => {
             if (!e.target.files.length) return;

@@ -8,9 +8,8 @@ export default defineConfig({
   workers: 1, // WebRTC interactions can be stateful, safest to run 1 worker for Sender/Receiver pairs
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: `http://127.0.0.1:${process.env.PORT || 3000}`,
     trace: 'on-first-retry',
-    // These args bypass the "Choose what to share" prompt and feed a fake video stream
     launchOptions: {
       args: [
         '--use-fake-ui-for-media-stream',
@@ -26,10 +25,9 @@ export default defineConfig({
     }
   ],
 
-  // Automatically start the server before running the tests
   webServer: {
-    command: 'npm run start',
-    url: 'http://127.0.0.1:3000',
+    command: `PORT=${process.env.PORT || 3000} npm run start`,
+    url: `http://127.0.0.1:${process.env.PORT || 3000}`,
     reuseExistingServer: !process.env.CI,
     timeout: 10000,
   },

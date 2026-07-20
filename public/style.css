@@ -248,6 +248,7 @@ video {
     align-items: center;
     background: var(--bg-surface);
     border-bottom: 1px solid var(--border-color);
+    flex: 0 0 auto;
 }
 
 .danger-btn {
@@ -266,20 +267,87 @@ video {
     transform: none;
 }
 
+/* Remote Layout Mobile First */
 .remote-controls {
     flex: 1;
+    min-height: 0; /* Crucial: stops the container from expanding beyond 100vh */
     display: flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 1rem;
     gap: 1rem;
+    justify-content: flex-start;
+}
+
+.preview-wrapper {
+    flex: 1;
+    min-height: 0; /* Allows shrinking */
+    background: rgba(0,0,0,0.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.preview-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+#pdf-preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    display: none;
+}
+
+#preview-loading {
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+}
+
+.remote-button-group {
+    flex: 0 0 25vh; /* Strict 25% height for buttons */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
 .control-btn {
-    flex: 1;
+    border-radius: 16px;
     font-size: 1.25rem;
-    border-radius: 8px;
+    flex: 1;
+    min-height: 0;
 }
 
-#btn-prev {
-    flex: 0.3;
+#btn-next {
+    font-size: 1.4em;
+}
+
+/* Big Screens (PC) Layout */
+@media (min-width: 768px) {
+    .remote-button-group {
+        flex: 0 0 20vh; /* Slightly smaller button height on PC */
+        flex-direction: row; /* Side-by-side on PC */
+        justify-content: center;
+        align-items: stretch;
+    }
+
+    .control-btn {
+        flex: 1;
+        max-width: 250px; /* Fixed size constraint on PC */
+    }
+    
+    #btn-next {
+        font-size: 1.25rem; /* Match sizes on PC */
+    }
 }

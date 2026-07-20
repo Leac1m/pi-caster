@@ -15,17 +15,18 @@
             <button id="btn-stop" class="btn danger-btn">Stop</button>
         </header>
         
-        <div class="remote-controls" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 10px;">
-            <button id="btn-prev" class="btn secondary-btn control-btn" style="flex: 0 0 60px; min-height: 60px; font-size: 1.1em; border-radius: 12px;">Previous</button>
-            
-            <div id="preview-wrapper" style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 15px 0; background: rgba(0,0,0,0.2); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
-                <div style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
-                    <canvas id="pdf-preview" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); display: none;"></canvas>
-                    <p id="preview-loading" style="color: rgba(255,255,255,0.5); margin: 0;">Loading Preview...</p>
+        <div class="remote-controls">
+            <div id="preview-wrapper" class="preview-wrapper">
+                <div class="preview-inner">
+                    <canvas id="pdf-preview"></canvas>
+                    <p id="preview-loading">Loading Preview...</p>
                 </div>
             </div>
             
-            <button id="btn-next" class="btn primary-btn control-btn" style="flex: 0 0 100px; min-height: 100px; font-size: 1.4em; border-radius: 16px; margin-bottom: 20px;">Next</button>
+            <div class="remote-button-group">
+                <button id="btn-prev" class="btn secondary-btn control-btn">Previous</button>
+                <button id="btn-next" class="btn primary-btn control-btn">Next</button>
+            </div>
         </div>
     </div>
 
@@ -138,6 +139,17 @@
         document.getElementById('btn-stop').addEventListener('click', () => {
             socket.emit('presentation-stop');
             window.location.href = 'index';
+        });
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault(); // prevent scrolling
+                document.getElementById('btn-next').click();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                document.getElementById('btn-prev').click();
+            }
         });
     </script>
 </body>

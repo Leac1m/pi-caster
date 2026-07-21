@@ -1,6 +1,29 @@
 #!/bin/bash
 # PiCaster Raspberry Pi Setup Script
 # This script configures a Raspberry Pi to boot into Chromium Kiosk Mode and ensures the server auto-starts.
+# Use --dev to skip kiosk/hotspot and run the server directly for easy iteration.
+
+DEV_MODE=false
+for arg in "$@"; do
+    if [[ "$arg" == "--dev" || "$arg" == "-d" ]]; then
+        DEV_MODE=true
+    fi
+done
+
+if [[ "$DEV_MODE" == "true" ]]; then
+    echo "=== DEV MODE ==="
+    echo "Running server directly (no Docker, no kiosk, no hotspot)."
+    echo ""
+    echo "On this Pi (screen + keyboard):"
+    echo "  http://localhost:3000"
+    echo ""
+    echo "From another device on the same network:"
+    echo "  http://$(hostname -I | awk '{print $1}'):3000"
+    echo ""
+    echo "Press Ctrl+C to stop."
+    cd "$(dirname "$0")/.." && exec node server.js
+    exit $?
+fi
 
 echo "Starting PiCaster Raspberry Pi Setup..."
 

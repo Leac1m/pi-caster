@@ -5,12 +5,18 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test:api": "NODE_ENV=test node --test",
+    "lint": "eslint --no-error-on-unmatched-pattern lib/ server.js tests/unit/ tests/functional/ tests/integration/",
+    "test:unit": "NODE_ENV=test node --test tests/unit/*.js",
+    "test:functional": "NODE_ENV=test node tests/functional/index.js",
+    "test:integration": "NODE_ENV=test node --test --test-concurrency=1 tests/integration/*.js",
+    "test:security": "NODE_ENV=test node --test --test-name-pattern='security|traversal|oversize|xss|inject' tests/functional/server.security.test.js",
+    "test:api": "npm run test:unit && npm run test:functional && npm run test:integration && npm run test:security",
     "test:e2e": "playwright test",
-    "test": "npm run test:api && npm run test:e2e"
+    "test": "npm run lint && npm run test:api && npm run test:e2e"
   },
   "dependencies": {
     "express": "^4.19.0",
+    "helmet": "^8.3.0",
     "multer": "^2.2.0",
     "pptxgenjs": "^4.0.1",
     "socket.io": "^4.7.0"
@@ -20,7 +26,10 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2"
   }

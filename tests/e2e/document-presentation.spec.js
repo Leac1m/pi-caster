@@ -4,13 +4,8 @@ import fs from 'fs';
 
 test.describe('Document Presentation with Remote Preview', () => {
   test('should upload PDF, sync to receiver, and render preview on remote', async ({ browser }) => {
-    // 1. Create a dummy PDF file for testing
-    const testPdfPath = './tests/e2e/test-dummy.pdf';
-    if (!fs.existsSync(testPdfPath)) {
-      // Create a minimal valid PDF file (1-page blank PDF)
-      const dummyPdfContent = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources <<>> >>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n203\n%%EOF`;
-      fs.writeFileSync(testPdfPath, dummyPdfContent);
-    }
+    // Use a committed single-page PDF fixture (multi-page navigation is tested separately).
+    const testPdfPath = path.resolve('tests/e2e/test-multipage.pdf');
 
     const receiverContext = await browser.newContext();
     const senderContext = await browser.newContext();
@@ -22,14 +17,19 @@ test.describe('Document Presentation with Remote Preview', () => {
     await receiverPage.goto('/receiver');
     await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
 
-    // 3. Open Sender (Index) and upload PDF
+    // 3. Open Sender (Index) and upload PDF, capturing the served fileUrl
     await senderPage.goto('/index');
-    
+
     // Setup file chooser intercept before clicking
     const fileChooserPromise = senderPage.waitForEvent('filechooser');
     await senderPage.locator('text=Choose File').click();
     const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(testPdfPath);
+
+    const [uploadResponse] = await Promise.all([
+      senderPage.waitForResponse(resp => resp.url().includes('/upload') && resp.request().method() === 'POST'),
+      fileChooser.setFiles(testPdfPath)
+    ]);
+    const { fileUrl } = await uploadResponse.json();
 
     // Wait for upload success and redirect to remote
     await expect(senderPage.locator('#upload-status')).toContainText('Success! Redirecting...');
@@ -37,7 +37,7 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // 4. Verify Remote UI (Sender is now Remote)
     await expect(senderPage.locator('.remote-header h2')).toContainText('Remote Control');
-    
+
     // The preview loading text should disappear and the canvas should become visible
     await expect(senderPage.locator('#preview-loading')).toBeHidden();
     await expect(senderPage.locator('#pdf-preview')).toBeVisible();
@@ -48,11 +48,11 @@ test.describe('Document Presentation with Remote Preview', () => {
     await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // 6. Test accidental refresh recovery (No slide-next because dummy PDF is 1 page)
-    
+
     // Simulate accidental refresh on the Remote
     await senderPage.reload();
     await expect(senderPage.locator('.remote-header h2')).toContainText('Remote Control');
-    
+
     // Verify Remote instantly recovers the preview
     await expect(senderPage.locator('#preview-loading')).toBeHidden();
     await expect(senderPage.locator('#pdf-preview')).toBeVisible();
@@ -74,22 +74,20 @@ test.describe('Document Presentation with Remote Preview', () => {
     await expect(receiverPage.locator('#waiting-overlay')).toBeVisible();
     await expect(receiverPage.locator('#pdf-render')).toBeHidden();
 
+    // 8. Phase 1 regression: stopping must purge the uploaded file from the server
+    const fileCheck = await senderPage.request.get(fileUrl);
+    await expect(fileCheck.status()).toBe(404);
+
     // Cleanup
     await receiverContext.close();
     await senderContext.close();
-    if (fs.existsSync(testPdfPath)) {
-        fs.unlinkSync(testPdfPath);
-    }
   });
 
   test('should upload PPTX, sync to receiver, and render preview on remote', async ({ browser }) => {
-    const testPptxPath = './tests/e2e/test-dummy.pptx';
-    
-    // We expect the dummy file to already exist, created via npm pptxgenjs script
-    if (!fs.existsSync(testPptxPath)) {
-      test.skip();
-      return;
-    }
+    const testPptxPath = path.resolve('tests/e2e/test-dummy.pptx');
+
+    // If the PPTX fixture is missing, mark as fixme rather than silently skipping.
+    test.fixme(!fs.existsSync(testPptxPath), 'PPTX fixture missing — tracked in Phase 8');
 
     const receiverContext = await browser.newContext();
     const senderContext = await browser.newContext();
@@ -137,6 +135,57 @@ test.describe('Document Presentation with Remote Preview', () => {
     await expect(receiverPage.locator('#pptx-render')).toBeHidden();
 
     // Cleanup
+    await receiverContext.close();
+    await senderContext.close();
+  });
+
+  test('PDF presentation with full cycle including stop purges the upload (security/regression)', async ({ browser }) => {
+    // Security/regression test for Phase 1 purge() fix: after an explicit stop,
+    // the uploaded file must no longer be reachable via its public URL.
+    const testPdfPath = path.resolve('tests/e2e/test-multipage.pdf');
+
+    const receiverContext = await browser.newContext();
+    const senderContext = await browser.newContext();
+
+    const receiverPage = await receiverContext.newPage();
+    const senderPage = await senderContext.newPage();
+
+    await receiverPage.goto('/receiver');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+
+    await senderPage.goto('/index');
+
+    const fileChooserPromise = senderPage.waitForEvent('filechooser');
+    await senderPage.locator('text=Choose File').click();
+    const fileChooser = await fileChooserPromise;
+
+    const [uploadResponse] = await Promise.all([
+      senderPage.waitForResponse(resp => resp.url().includes('/upload') && resp.request().method() === 'POST'),
+      fileChooser.setFiles(testPdfPath)
+    ]);
+    const { fileUrl } = await uploadResponse.json();
+    expect(fileUrl).toMatch(/\/uploads\//);
+
+    await expect(senderPage.locator('#upload-status')).toContainText('Success! Redirecting...');
+    await senderPage.waitForURL('**/remote');
+
+    // Presentation is active on both remote and receiver
+    await expect(senderPage.locator('#pdf-preview')).toBeVisible();
+    await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
+
+    // Stop the presentation
+    await senderPage.locator('#btn-stop').click();
+    await senderPage.waitForURL('**/index');
+
+    // Receiver resets to waiting overlay (the #pdf-render hidden state is
+    // covered by the earlier PDF test; here we focus on the security regression).
+    await expect(receiverPage.locator('#waiting-overlay')).toBeVisible({ timeout: 10000 });
+
+    // The originally uploaded file must be gone
+    const fileCheck = await senderPage.request.get(fileUrl);
+    await expect(fileCheck.status()).toBe(404);
+
     await receiverContext.close();
     await senderContext.close();
   });

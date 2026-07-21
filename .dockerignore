@@ -1,3 +1,10 @@
 node_modules
 .env
 .git
+tests/
+playwright-report/
+test-results/
+wifi-credentials.json
+wifi-scan-results.json
+.eslintcache
+uploads/

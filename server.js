@@ -6,6 +6,11 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
 import os from 'os';
+import helmet from 'helmet';
+import { getLocalIp } from './lib/ip.js';
+import { sanitizeFilename } from './lib/filename.js';
+import { presentationStateSingleton } from './lib/presentation.js';
+import { validateWifiInput } from './lib/wifi.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,49 +19,61 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
+const state = presentationStateSingleton;
+
 // Multer config
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
+        const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+        fs.mkdirSync(uploadDir, { recursive: true });
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, sanitizeFilename(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
 
+function fileFilter(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.pdf' || ext === '.pptx') {
+        cb(null, true);
+    } else {
+        cb(new Error('Only .pdf and .pptx files are allowed'));
+    }
+}
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 100 * 1024 * 1024 },
+    fileFilter
+});
+
+app.use(helmet({
+    // Existing public/*.html uses inline scripts/handlers; keep other helmet defaults.
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'", "ws:", "wss:", "blob:"],
+            mediaSrc: ["'self'", "blob:"],
+            workerSrc: ["'self'", "blob:"],
+            fontSrc: ["'self'", "data:", "https:"],
+            objectSrc: ["'self'", "blob:", "data:"],
+            frameSrc: ["'self'", "blob:", "data:"],
+        },
+    },
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-let receiverSocketId = null;
-let activePresentationPath = null;
-let activePresentationUrl = null;
-let remoteSocketId = null;
-let currentSlide = 1;
-
 // Local IP Route
 app.get('/api/ip', (req, res) => {
-    const interfaces = os.networkInterfaces();
-    let localIp = 'localhost';
-    let isHotspot = false;
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                localIp = iface.address;
-                if (localIp === '10.42.0.1') {
-                    isHotspot = true;
-                }
-                break;
-            }
-        }
-        if (localIp !== 'localhost') break;
-    }
-    res.json({ ip: localIp, isHotspot: isHotspot });
+    const { ip, isHotspot } = getLocalIp(os.networkInterfaces());
+    res.json({ ip, isHotspot });
 });
 
 // Captive Portal Wi-Fi Scan
@@ -66,7 +83,7 @@ app.get('/api/wifi/scan', (req, res) => {
         try {
             const data = fs.readFileSync(scanFile, 'utf8');
             res.json({ success: true, networks: JSON.parse(data) });
-        } catch (e) {
+        } catch {
             res.json({ success: false, networks: [], error: 'Failed to parse scan results' });
         }
     } else {
@@ -77,16 +94,17 @@ app.get('/api/wifi/scan', (req, res) => {
 // Captive Portal Wi-Fi Connect
 app.post('/api/wifi/connect', (req, res) => {
     const { ssid, password } = req.body;
-    if (!ssid) {
-        return res.status(400).json({ success: false, error: 'SSID required' });
+    const validation = validateWifiInput({ ssid, password });
+    if (!validation.ok) {
+        return res.status(400).json({ success: false, error: validation.error });
     }
-    
-    const credsFile = path.join(__dirname, 'wifi-credentials.json');
+
+    const credsFile = path.join(process.cwd(), 'wifi-credentials.json');
     try {
         fs.writeFileSync(credsFile, JSON.stringify({ ssid, password }));
         res.json({ success: true, message: 'Credentials saved. Applying new network configuration...' });
-    } catch (e) {
-        console.error("Failed to write wifi credentials:", e);
+    } catch (err) {
+        console.error("Failed to write wifi credentials:", err);
         res.status(500).json({ success: false, error: 'Failed to save credentials' });
     }
 });
@@ -96,61 +114,59 @@ app.post('/upload', upload.single('presentation'), (req, res) => {
     if (!req.file) {
         return res.status(400).send('No file uploaded.');
     }
-    
-    // Purge old presentation if it exists
-    purgePresentation();
 
-    activePresentationPath = req.file.path;
-    activePresentationUrl = `/uploads/${req.file.filename}`;
-    currentSlide = 1;
+    // Purge old presentation if it exists
+    state.purge(fs);
+
+    state.start({ path: req.file.path, url: `/uploads/${req.file.filename}` });
 
     // Notify receiver and any already connected remotes
-    io.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
+    io.emit('presentation-start', { fileUrl: state.activePresentationUrl, slide: state.currentSlide });
 
-    res.json({ success: true, fileUrl: activePresentationUrl });
+    res.json({ success: true, fileUrl: state.activePresentationUrl });
 });
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
     socket.on('register-receiver', () => {
-        receiverSocketId = socket.id;
+        state.receiverSocketId = socket.id;
         console.log('Receiver registered:', socket.id);
         socket.broadcast.emit('receiver-ready');
-        if (activePresentationUrl) {
-            socket.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
+        if (state.activePresentationUrl) {
+            socket.emit('presentation-start', { fileUrl: state.activePresentationUrl, slide: state.currentSlide });
         }
     });
 
     socket.on('register-remote', () => {
-        remoteSocketId = socket.id;
+        state.remoteSocketId = socket.id;
         console.log('Remote registered:', socket.id);
-        if (activePresentationUrl) {
-            socket.emit('presentation-start', { fileUrl: activePresentationUrl, slide: currentSlide });
+        if (state.activePresentationUrl) {
+            socket.emit('presentation-start', { fileUrl: state.activePresentationUrl, slide: state.currentSlide });
         }
     });
 
     // Presentation Control Events
     socket.on('slide-next', () => {
-        currentSlide++;
-        if (receiverSocketId) io.to(receiverSocketId).emit('slide-next');
+        state.next();
+        if (state.receiverSocketId) io.to(state.receiverSocketId).emit('slide-next');
     });
 
     socket.on('slide-prev', () => {
-        if (currentSlide > 1) currentSlide--;
-        if (receiverSocketId) io.to(receiverSocketId).emit('slide-prev');
+        state.prev();
+        if (state.receiverSocketId) io.to(state.receiverSocketId).emit('slide-prev');
     });
 
     socket.on('presentation-stop', () => {
-        if (receiverSocketId) io.to(receiverSocketId).emit('presentation-stop');
-        purgePresentation();
+        if (state.receiverSocketId) io.to(state.receiverSocketId).emit('presentation-stop');
+        state.purge(fs);
     });
 
     // Screen Share Events
     socket.on('offer', (data) => {
         console.log('Offer received from', socket.id);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('offer', { sdp: data.sdp, senderId: socket.id });
+        if (state.receiverSocketId) {
+            io.to(state.receiverSocketId).emit('offer', { sdp: data.sdp, senderId: socket.id });
         }
     });
 
@@ -160,8 +176,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('ice-candidate', (data) => {
-        if (data.target === 'receiver' && receiverSocketId) {
-            io.to(receiverSocketId).emit('ice-candidate', { candidate: data.candidate, senderId: socket.id });
+        if (data.target === 'receiver' && state.receiverSocketId) {
+            io.to(state.receiverSocketId).emit('ice-candidate', { candidate: data.candidate, senderId: socket.id });
         } else if (data.targetId) {
             io.to(data.targetId).emit('ice-candidate', { candidate: data.candidate });
         }
@@ -169,12 +185,12 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
-        if (socket.id === receiverSocketId) {
-            receiverSocketId = null;
+        if (socket.id === state.receiverSocketId) {
+            state.receiverSocketId = null;
             console.log('Receiver disconnected');
         }
-        if (socket.id === remoteSocketId) {
-            remoteSocketId = null;
+        if (socket.id === state.remoteSocketId) {
+            state.remoteSocketId = null;
             console.log('Remote disconnected');
             // We intentionally do NOT purge the presentation here.
             // This protects against accidental refreshes on the mobile device.
@@ -183,19 +199,35 @@ io.on('connection', (socket) => {
     });
 });
 
-function purgePresentation() {
-    if (activePresentationPath && fs.existsSync(activePresentationPath)) {
-        try {
-            fs.unlinkSync(activePresentationPath);
-            console.log('Purged active presentation');
-        } catch (e) {
-            console.error('Failed to purge presentation', e);
+// Multer / upload error handler — never leak stack traces
+app.use((err, req, res, next) => {
+    if (err) {
+        const status = err instanceof multer.MulterError || err.message ? 400 : 500;
+        const message = err.message || 'Upload failed';
+        return res.status(status).json({ success: false, error: message });
+    }
+    next();
+});
+
+function __testReset() {
+    state.reset();
+    const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+    try {
+        if (fs.existsSync(uploadDir)) {
+            for (const file of fs.readdirSync(uploadDir)) {
+                try {
+                    fs.unlinkSync(path.join(uploadDir, file));
+                } catch {
+                    // swallow
+                }
+            }
         }
-        activePresentationPath = null;
+    } catch {
+        // swallow
     }
 }
 
-export { app, httpServer, io };
+export { app, httpServer, io, presentationStateSingleton, __testReset };
 
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'test') {

@@ -157,6 +157,25 @@ KIOSK_FLAGS="$KIOSK_FLAGS --ozone-platform=wayland"
 KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-escape-key=Escape"
 KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-shortcut-action=openUrl"
 
+# Wait-for-server helper: keep polling until the Node server is reachable
+wait_for_server() {
+    local url="${1:-http://localhost:3000/api/ip}"
+    local max_wait="${2:-30}"
+    local waited=0
+    echo "[pi-caster] Waiting for server at $url..."
+    while ! curl -sf --max-time 2 "$url" > /dev/null 2>&1; do
+        sleep 0.5
+        waited=$((waited + 1))
+        if [ "$waited" -ge "$((max_wait * 2))" ]; then
+            echo "[pi-caster] WARNING: Server did not respond after ${max_wait}s — launching Chromium anyway."
+            break
+        fi
+    done
+    if [ "$waited" -lt "$((max_wait * 2))" ]; then
+        echo "[pi-caster] Server is up (waited ${waited}s)."
+    fi
+}
+
 # Check if using Wayland (newer Pi OS) or X11 (older Pi OS)
 if command -v labwc &> /dev/null || [ -d "$HOME/.config/labwc" ]; then
     echo "Wayland (labwc) detected."
@@ -164,7 +183,8 @@ if command -v labwc &> /dev/null || [ -d "$HOME/.config/labwc" ]; then
     LABWC_AUTOSTART="$HOME/.config/labwc/autostart"
 
     if ! grep -q "$CHROMIUM_CMD" "$LABWC_AUTOSTART" 2>/dev/null; then
-        echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver &" >> "$LABWC_AUTOSTART"
+        echo "wait_for_server() { local url=\"\${1:-http://localhost:3000/api/ip}\"; local max_wait=\"\${2:-30}\"; local waited=0; while ! curl -sf --max-time 2 \"\$url\" > /dev/null 2>&1; do sleep 0.5; waited=\$((waited + 1)); if [ \"\$waited\" -ge \"\$((max_wait * 2))\" ]; then echo \"[pi-caster] WARNING: Server did not respond after \${max_wait}s — launching anyway.\"; break; fi; done; }" >> "$LABWC_AUTOSTART"
+        echo "source /etc/pi-caster-env; wait_for_server; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver &" >> "$LABWC_AUTOSTART"
         echo "Added Chromium to labwc autostart."
     else
         echo "Chromium autostart already configured in labwc."
@@ -176,7 +196,8 @@ elif command -v wayfire &> /dev/null || [ -f "/etc/wayfire/wayfire.ini" ]; then
     WAYFIRE_INI="$HOME/.config/wayfire.ini"
 
     if ! grep -q "$CHROMIUM_CMD" "$WAYFIRE_INI" 2>/dev/null; then
-        echo -e "\n[autostart]\nchromium = KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver" >> "$WAYFIRE_INI"
+        echo -e "\n[autostart]" >> "$WAYFIRE_INI"
+        echo "chromium = bash -c 'source /etc/pi-caster-env; wait_for_server() { local url=\"\${1:-http://localhost:3000/api/ip}\"; local max_wait=\"\${2:-30}\"; local waited=0; while ! curl -sf --max-time 2 \"\$url\" > /dev/null 2>&1; do sleep 0.5; waited=\$((waited + 1)); if [ \"\$waited\" -ge \"\$((max_wait * 2))\" ]; then echo \"[pi-caster] WARNING: Server did not respond after \${max_wait}s — launching anyway.\"; break; fi; done; }; wait_for_server; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$WAYFIRE_INI"
         echo "Added Chromium to Wayfire autostart."
     else
         echo "Chromium autostart already configured in Wayfire."
@@ -191,7 +212,7 @@ elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; 
         echo "@xset s off" >> "$AUTOSTART"
         echo "@xset -dpms" >> "$AUTOSTART"
         echo "@xset s noblank" >> "$AUTOSTART"
-        echo "@bash -c 'source /etc/pi-caster-env && KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$AUTOSTART"
+        echo "@bash -c 'source /etc/pi-caster-env; wait_for_server() { local url=\"\${1:-http://localhost:3000/api/ip}\"; local max_wait=\"\${2:-30}\"; local waited=0; while ! curl -sf --max-time 2 \"\$url\" > /dev/null 2>&1; do sleep 0.5; waited=\$((waited + 1)); if [ \"\$waited\" -ge \"\$((max_wait * 2))\" ]; then echo \"[pi-caster] WARNING: Server did not respond after \${max_wait}s — launching anyway.\"; break; fi; done; }; wait_for_server; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$AUTOSTART"
         echo "Added Chromium to LXDE autostart."
     else
         echo "Chromium autostart already configured in LXDE."

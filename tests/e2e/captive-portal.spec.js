@@ -32,13 +32,15 @@ test.describe('Phase 9: Standalone Network & Captive Portal', () => {
 
   test('Receiver UI should always display Wi-Fi join instructions and QR code', async ({ page }) => {
     await page.goto('/receiver');
-    
-    // Check updated text content
-    await expect(page.locator('#waiting-overlay h1')).toHaveText('PiProjector is Ready');
-    await expect(page.locator('#waiting-overlay p').first()).toHaveText('Scan to join PiCaster Wi-Fi and start casting');
-    await expect(page.locator('#ip-text')).toContainText("Or manually join 'PiCaster' Wi-Fi");
 
-    // Ensure QR code container is visible
+    // The QR code and hotspot instructions are shown immediately (server can be offline).
+    // The h1 may show "PiProjector is Starting…" until socket connects, then "PiProjector is Ready".
+    await expect(page.locator('#waiting-overlay h1')).toContainText('PiProjector', { timeout: 10000 });
+
+    // The QR code is rendered immediately on page load — hotspot creds are static.
     await expect(page.locator('#qrcode')).toBeVisible();
+
+    // ip-text shows static hotspot instruction; if server is reachable it will include the dynamic IP.
+    await expect(page.locator('#ip-text')).toContainText('PiCaster');
   });
 });

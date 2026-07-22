@@ -28,11 +28,11 @@
 <body class="receiver-body">
     <div id="video-container">
         <div class="waiting-overlay" id="waiting-overlay">
-            <div class="spinner"></div>
-            <h1>PiProjector is Ready</h1>
-            <p>Waiting for a connection or presentation...</p>
+            <div class="spinner" id="connecting-spinner"></div>
+            <h1 id="overlay-title">PiProjector is Starting…</h1>
+            <p id="overlay-subtitle">Waiting for server to come online…</p>
             <div id="qrcode" style="margin-top: 20px; background: white; padding: 10px; border-radius: 10px; display: none;"></div>
-            <p id="ip-text" style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;"></p>
+            <p id="ip-text" style="margin-top: 10px; font-size: 0.9em; opacity: 0.8; display: none;"></p>
         </div>
         <video id="remote-video" autoplay playsinline></video>
         <canvas id="pdf-render"></canvas>
@@ -70,43 +70,79 @@
         const pdfCanvas = document.getElementById('pdf-render');
         const pdfCtx = pdfCanvas.getContext('2d');
         const waitingOverlay = document.getElementById('waiting-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlaySubtitle = document.getElementById('overlay-subtitle');
+        const qrContainer = document.getElementById('qrcode');
+        const ipText = document.getElementById('ip-text');
+        const connectingSpinner = document.getElementById('connecting-spinner');
+
+        const WIFI_PAYLOAD = 'WIFI:T:WPA;S:PiCaster;P:picaster2026;;';
 
         const configuration = {
             'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
         };
 
-        socket.on('connect', () => {
-            console.log("Connected to signaling server");
-            socket.emit('register-receiver');
+        // Show QR immediately — hotspot credentials are static.
+        // The dynamic IP (for non-hotspot mode) is fetched below.
+        function showReadyState(localIp) {
+            connectingSpinner.style.display = 'none';
+            overlayTitle.textContent = 'PiProjector is Ready';
+            overlaySubtitle.textContent = 'Scan to join PiCaster Wi-Fi and start casting';
+            qrContainer.style.display = 'block';
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: WIFI_PAYLOAD,
+                width: 250,
+                height: 250,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M,
+            });
+            if (localIp && localIp !== 'localhost') {
+                ipText.textContent = `Server IP: ${localIp}  •  Or join 'PiCaster' Wi-Fi (Password: picaster2026)`;
+            } else {
+                ipText.textContent = "Or manually join 'PiCaster' Wi-Fi (Password: picaster2026)";
+            }
+            ipText.style.display = 'block';
+        }
 
-            fetch('/api/ip')
-                .then(res => res.json())
-                .then(data => {
-                    const titleText = document.querySelector('#waiting-overlay h1');
-                    const subtitleText = document.querySelector('#waiting-overlay p');
-                    const qrContainer = document.getElementById('qrcode');
-                    const ipText = document.getElementById('ip-text');
-                    
-                    titleText.textContent = "PiProjector is Ready";
-                    subtitleText.textContent = "Scan to join PiCaster Wi-Fi and start casting";
-                    
-                    const wifiPayload = "WIFI:T:WPA;S:PiCaster;P:picaster2026;;";
-                    
-                    ipText.textContent = "Or manually join 'PiCaster' Wi-Fi (Password: picaster2026)";
-                    ipText.style.display = 'block';
-                    qrContainer.style.display = 'block';
-                    qrContainer.innerHTML = '';
-                    new QRCode(qrContainer, {
-                        text: wifiPayload,
-                        width: 250,
-                        height: 250,
-                        colorDark : "#000000",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.M
-                    });
-                })
-                .catch(err => console.error('Failed to get IP for QR code', err));
+        // Try to fetch the server's IP; if server is down this is a no-op.
+        // The QR is always shown regardless — hotspot creds are static.
+        async function fetchServerIp() {
+            try {
+                const res = await fetch('/api/ip');
+                if (!res.ok) throw new Error('server error');
+                const data = await res.json();
+                showReadyState(data.ip);
+            } catch (_) {
+                // Server not reachable yet — show QR with no dynamic IP.
+                // Socket.io will eventually connect and call showReadyState again
+                // with the real IP if the server comes up.
+                console.warn('Server not reachable yet — showing QR with static credentials.');
+                showReadyState(null);
+            }
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected to signaling server');
+            socket.emit('register-receiver');
+            fetchServerIp();
         });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from signaling server');
+        });
+
+        // If socket was already connected before this script ran (page reload mid-session),
+        // the 'connect' event already fired. Handle that case.
+        if (socket.connected) {
+            socket.emit('register-receiver');
+            fetchServerIp();
+        } else {
+            // Server is not yet reachable — show QR immediately with static hotspot creds
+            // so the display is never blank/dark while waiting for the server to boot.
+            showReadyState(null);
+        }
 
         // Presentation State
         let pdfDoc = null,

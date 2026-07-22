@@ -1,34 +1,115 @@
 {
-    default_sni localhost
-    auto_https off
+	default_sni localhost
+}
+
+(splash_screen) {
+	handle_errors {
+		header Content-Type text/html
+		respond `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
+    <title>PiCaster is Starting…</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1b3a 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 420px;
+        }
+        .spinner {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            border: 4px solid rgba(99, 102, 241, 0.15);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 2rem;
+            margin: 0 0 12px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0 0 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 0.875rem;
+            color: #818cf8;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>PiCaster is Starting…</h1>
+        <p>Waiting for the cast server to come online.</p>
+        <p id="status">Connecting to server…</p>
+    </div>
+    <script>
+        (async () => {
+            const statusEl = document.getElementById('status');
+            for (;;) {
+                try {
+                    const res = await fetch('/api/ip', { cache: 'no-store' });
+                    if (res.ok) {
+                        statusEl.textContent = 'Server is up. Reloading…';
+                        window.location.reload();
+                        return;
+                    }
+                } catch (_) {}
+                statusEl.textContent = 'Polling server…';
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        })();
+    </script>
+</body>
+</html>` 502
+	}
 }
 
 http:// {
-    @captive {
-        not host localhost 10.42.0.1 picaster.local cast.pi
-    }
-    redir @captive http://10.42.0.1/captive.html 302
+	@captive {
+		not host localhost 10.42.0.1 picaster.local cast.pi
+	}
+	redir @captive http://10.42.0.1/captive.html 302
 
-    @local {
-        host localhost 10.42.0.1 picaster.local cast.pi
-    }
-    reverse_proxy @local {$APP_HOST:app}:3000
+	@local {
+		host localhost 10.42.0.1 picaster.local cast.pi
+	}
+	redir @local https://{host}{uri} 308
 
-    handle_errors {
-        header Content-Type text/html
-        respond "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"refresh\" content=\"3\"><title>PiProjector is Starting…</title><style>body{margin:0;padding:0;background:#0d0d1a;color:white;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}.container{text-align:center}.spinner{width:60px;height:60px;margin:0 auto 20px;border:4px solid rgba(255,255,255,0.1);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}h1{font-size:2rem;margin:0 0 8px;font-weight:600}p{color:rgba(255,255,255,0.6);margin:0}#status{margin-top:16px;font-size:0.85rem;color:rgba(255,255,255,0.4)}</style></head><body><div class=\"container\"><div class=\"spinner\"></div><h1>PiProjector is Starting…</h1><p>Waiting for the cast server to come online.</p><p id=\"status\">This page will refresh automatically.</p></div><script>(async()=>{const e=document.getElementById('status');for(;;){try{const r=await fetch('/api/ip',{cache:'no-store'});if(r.ok){e.textContent='Server is up. Redirecting…';window.location.replace('/receiver');return}}catch(_){}e.textContent='Polling server…';await new Promise(r=>setTimeout(r,1500))}})()</script></body></html>"
-    }
+	import splash_screen
 }
 
 https://localhost, https://10.42.0.1, https://picaster.local, https://cast.pi {
-    tls internal
-    @local {
-        host localhost 10.42.0.1 picaster.local cast.pi
-    }
-    reverse_proxy @local {$APP_HOST:app}:3000
+	tls internal
+	reverse_proxy {$APP_HOST:app}:3000
 
-    handle_errors {
-        header Content-Type text/html
-        respond "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"refresh\" content=\"3\"><title>PiProjector is Starting…</title><style>body{margin:0;padding:0;background:#0d0d1a;color:white;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}.container{text-align:center}.spinner{width:60px;height:60px;margin:0 auto 20px;border:4px solid rgba(255,255,255,0.1);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}h1{font-size:2rem;margin:0 0 8px;font-weight:600}p{color:rgba(255,255,255,0.6);margin:0}#status{margin-top:16px;font-size:0.85rem;color:rgba(255,255,255,0.4)}</style></head><body><div class=\"container\"><div class=\"spinner\"></div><h1>PiProjector is Starting…</h1><p>Waiting for the cast server to come online.</p><p id=\"status\">This page will refresh automatically.</p></div><script>(async()=>{const e=document.getElementById('status');for(;;){try{const r=await fetch('/api/ip',{cache:'no-store'});if(r.ok){e.textContent='Server is up. Redirecting…';window.location.replace('/receiver');return}}catch(_){}e.textContent='Polling server…';await new Promise(r=>setTimeout(r,1500))}})()</script></body></html>"
-    }
+	import splash_screen
 }

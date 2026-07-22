@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
+    <title>PiProjector is Starting…</title>
+    <style>
+        body { margin: 0; padding: 0; background: #0d0d1a; color: white;
+               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+               min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { text-align: center; }
+        .spinner { width: 60px; height: 60px; margin: 0 auto 20px;
+                   border: 4px solid rgba(255,255,255,0.1); border-top-color: #6366f1;
+                   border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        h1 { font-size: 2rem; margin: 0 0 8px; font-weight: 600; }
+        p { color: rgba(255,255,255,0.6); margin: 0; }
+        #status { margin-top: 16px; font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>PiProjector is Starting…</h1>
+        <p>Waiting for the cast server to come online.</p>
+        <p id="status">This page will refresh automatically.</p>
+    </div>
+    <script>
+        (async () => {
+            const status = document.getElementById('status');
+            for (;;) {
+                try {
+                    const res = await fetch('/api/ip', { cache: 'no-store' });
+                    if (res.ok) {
+                        status.textContent = 'Server is up. Redirecting…';
+                        window.location.replace('/receiver');
+                        return;
+                    }
+                } catch (_) { /* server not ready yet */ }
+                status.textContent = 'Polling server…';
+                await new Promise(r => setTimeout(r, 1500));
+            }
+        })();
+    </script>
+</body>
+</html>

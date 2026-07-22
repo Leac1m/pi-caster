@@ -12,11 +12,21 @@ http:// {
         host localhost 10.42.0.1 picaster.local cast.pi
     }
     handle @local {
-        reverse_proxy {$APP_HOST:app}:3000
+        reverse_proxy {$APP_HOST:app}:3000 {
+            fallthrough
+        }
+        file_server {
+            root /app/public
+        }
     }
 }
 
 https://localhost, https://10.42.0.1, https://picaster.local, https://cast.pi {
     tls internal
-    reverse_proxy {$APP_HOST:app}:3000
+    reverse_proxy {$APP_HOST:app}:3000 {
+        fallthrough
+    }
+    file_server {
+        root /app/public
+    }
 }

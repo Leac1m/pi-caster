@@ -14,6 +14,7 @@ const REPO_ROOT = path.resolve(__dirname, '../..');
 
 process.env.NODE_ENV = 'test';
 process.env.UPLOAD_DIR = path.join(os.tmpdir(), 'pi-caster-sec-' + crypto.randomUUID());
+process.env.KIOSK_EXIT_TOKEN = 'pi-caster-kiosk-exit';
 fs.mkdirSync(process.env.UPLOAD_DIR, { recursive: true });
 
 const {
@@ -463,4 +464,33 @@ test('security: socket abuse suite', async (t) => {
     });
 
     void io;
+});
+
+test('security: kiosk exit rejects missing token', async () => {
+    const res = await request(app).post('/api/exit-kiosk');
+    assert.equal(res.status, 403);
+});
+
+test('security: kiosk exit rejects wrong token', async () => {
+    const res = await request(app)
+        .post('/api/exit-kiosk')
+        .set('X-Exit-Token', 'wrong-token');
+    assert.equal(res.status, 403);
+});
+
+test('security: kiosk exit accepts correct token (GET fallback)', async () => {
+    const res = await request(app)
+        .get('/api/exit-kiosk')
+        .set('X-Exit-Token', 'pi-caster-kiosk-exit');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
+    assert.match(res.body.message, /exit/i);
+});
+
+test('security: kiosk exit accepts correct token (POST)', async () => {
+    const res = await request(app)
+        .post('/api/exit-kiosk')
+        .set('X-Exit-Token', 'pi-caster-kiosk-exit');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
 });

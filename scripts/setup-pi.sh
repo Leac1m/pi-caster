@@ -146,14 +146,25 @@ fi
 # 2. Configure Chromium Kiosk Mode
 echo "Configuring Chromium Kiosk Mode..."
 
+# Generate a unique kiosk exit token for this installation
+KIOSK_EXIT_TOKEN="$(openssl rand -hex 16 2>/dev/null || head -c 16 /dev/urandom | xxd -p)"
+echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN" | sudo tee /etc/pi-caster-env > /dev/null
+echo "Generated kiosk exit token (saved to /etc/pi-caster-env)."
+
+# Build Chromium flags with kiosk escape support
+KIOSK_FLAGS="--kiosk --noerrdialogs --disable-infobars --incognito"
+KIOSK_FLAGS="$KIOSK_FLAGS --ozone-platform=wayland"
+KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-escape-key=Escape"
+KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-shortcut-action=openUrl"
+
 # Check if using Wayland (newer Pi OS) or X11 (older Pi OS)
 if command -v labwc &> /dev/null || [ -d "$HOME/.config/labwc" ]; then
     echo "Wayland (labwc) detected."
     mkdir -p "$HOME/.config/labwc"
     LABWC_AUTOSTART="$HOME/.config/labwc/autostart"
-    
+
     if ! grep -q "$CHROMIUM_CMD" "$LABWC_AUTOSTART" 2>/dev/null; then
-        echo "$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito --ozone-platform=wayland https://localhost/receiver &" >> "$LABWC_AUTOSTART"
+        echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver &" >> "$LABWC_AUTOSTART"
         echo "Added Chromium to labwc autostart."
     else
         echo "Chromium autostart already configured in labwc."
@@ -163,9 +174,9 @@ elif command -v wayfire &> /dev/null || [ -f "/etc/wayfire/wayfire.ini" ]; then
     echo "Wayland (Wayfire) detected."
     mkdir -p "$HOME/.config"
     WAYFIRE_INI="$HOME/.config/wayfire.ini"
-    
+
     if ! grep -q "$CHROMIUM_CMD" "$WAYFIRE_INI" 2>/dev/null; then
-        echo -e "\n[autostart]\nchromium = $CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$WAYFIRE_INI"
+        echo -e "\n[autostart]\nchromium = KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver" >> "$WAYFIRE_INI"
         echo "Added Chromium to Wayfire autostart."
     else
         echo "Chromium autostart already configured in Wayfire."
@@ -175,12 +186,12 @@ elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; 
     echo "X11 (LXDE) detected."
     mkdir -p "$HOME/.config/lxsession/LXDE-pi"
     AUTOSTART="$HOME/.config/lxsession/LXDE-pi/autostart"
-    
+
     if ! grep -q "$CHROMIUM_CMD" "$AUTOSTART" 2>/dev/null; then
         echo "@xset s off" >> "$AUTOSTART"
         echo "@xset -dpms" >> "$AUTOSTART"
         echo "@xset s noblank" >> "$AUTOSTART"
-        echo "@$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver" >> "$AUTOSTART"
+        echo "@bash -c 'source /etc/pi-caster-env && KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$AUTOSTART"
         echo "Added Chromium to LXDE autostart."
     else
         echo "Chromium autostart already configured in LXDE."
@@ -188,7 +199,7 @@ elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; 
 else
     echo "Warning: Could not detect Wayfire or LXDE configuration directories."
     echo "Please manually configure your desktop environment to auto-start Chromium:"
-    echo "$CHROMIUM_CMD --kiosk --noerrdialogs --disable-infobars --incognito https://localhost/receiver"
+    echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver"
 fi
 
 echo "Setup complete! Please restart your Raspberry Pi to verify the kiosk mode."

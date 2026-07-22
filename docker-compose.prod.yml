@@ -2,6 +2,8 @@ services:
   app:
     network_mode: "host"
     ports: !reset []
+    environment:
+      - KIOSK_EXIT_TOKEN=${KIOSK_EXIT_TOKEN:-pi-caster-kiosk-exit}
 
   proxy:
     network_mode: "host"

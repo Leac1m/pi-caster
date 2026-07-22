@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
 import os from 'os';
+import { spawn } from 'child_process';
 import helmet from 'helmet';
 import { getLocalIp } from './lib/ip.js';
 import { sanitizeFilename } from './lib/filename.js';
@@ -107,6 +108,55 @@ app.post('/api/wifi/connect', (req, res) => {
         console.error("Failed to write wifi credentials:", err);
         res.status(500).json({ success: false, error: 'Failed to save credentials' });
     }
+});
+
+// Kiosk Escape — exits Chromium kiosk and returns to desktop
+// Called by ESC key in receiver.html or via magic URL.
+// Guard: in production (Pi) this should only be reachable from the local machine
+// or from the Pi's own hotspot LAN. For added safety, requires the kiosk-exit-token header.
+const KIOSK_EXIT_TOKEN = process.env.KIOSK_EXIT_TOKEN || 'pi-caster-kiosk-exit';
+
+app.post('/api/exit-kiosk', (req, res) => {
+    const token = req.headers['x-exit-token'];
+    if (token !== KIOSK_EXIT_TOKEN) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const script = path.join(__dirname, 'scripts', 'exit-kiosk.sh');
+    if (!fs.existsSync(script)) {
+        return res.status(500).json({ success: false, error: 'Exit script not found' });
+    }
+
+    const child = spawn('sudo', ['bash', script], {
+        stdio: 'ignore',
+        detached: true,
+        uid: parseInt(process.env.SUDO_UID || '1000', 10),
+    });
+    child.unref();
+
+    res.json({ success: true, message: 'Kiosk exit triggered.' });
+});
+
+// GET fallback for kiosk exit (e.g. typing the URL directly in the browser address bar)
+app.get('/api/exit-kiosk', (req, res) => {
+    const token = req.headers['x-exit-token'] || req.query.token;
+    if (token !== KIOSK_EXIT_TOKEN) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const script = path.join(__dirname, 'scripts', 'exit-kiosk.sh');
+    if (!fs.existsSync(script)) {
+        return res.status(500).json({ success: false, error: 'Exit script not found' });
+    }
+
+    const child = spawn('sudo', ['bash', script], {
+        stdio: 'ignore',
+        detached: true,
+        uid: parseInt(process.env.SUDO_UID || '1000', 10),
+    });
+    child.unref();
+
+    res.json({ success: true, message: 'Kiosk exit triggered.' });
 });
 
 // File Upload Route

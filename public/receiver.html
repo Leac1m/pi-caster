@@ -362,12 +362,35 @@
             waitingOverlay.classList.remove('hidden');
         }
 
-        // Add keyboard shortcut to exit kiosk mode
+        // Kiosk escape: ESC or Ctrl+Shift+Escape calls the server exit endpoint.
+        // On success the kiosk Chromium process is killed and the desktop is restored.
+        const KIOSK_EXIT_TOKEN = 'pi-caster-kiosk-exit'; // matches server.js default
+
+        async function exitKiosk() {
+            try {
+                const res = await fetch('/api/exit-kiosk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Exit-Token': KIOSK_EXIT_TOKEN,
+                    },
+                });
+                if (!res.ok) {
+                    console.warn('Kiosk exit returned', res.status);
+                }
+            } catch (err) {
+                console.error('Kiosk exit failed:', err);
+            }
+        }
+
         document.addEventListener('keydown', (e) => {
-            // Ctrl + Shift + Esc
-            if (e.ctrlKey && e.shiftKey && e.key === 'Escape') {
-                console.log("Exit kiosk mode shortcut triggered.");
-                window.close();
+            // Ctrl + Shift + Escape  OR  plain Escape — both trigger exit
+            if ((e.ctrlKey && e.shiftKey && e.key === 'Escape') || e.key === 'Escape') {
+                e.preventDefault();
+                console.log('Kiosk escape triggered.');
+                exitKiosk();
+                // Fallback: also try window.close() in case this isn't true kiosk mode
+                setTimeout(() => { try { window.close(); } catch (_) {} }, 500);
             }
         });
     </script>

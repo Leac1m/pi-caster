@@ -6,33 +6,51 @@
     <title>AeroBeam Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="landing-body">
-    <div class="glass-container landing-container">
+<body class="landing-body clean-theme">
+    <div class="glass-container landing-container" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; color: #2c3971;">
         <h1>AeroBeam</h1>
-        <p>Select a presentation mode</p>
+        <p style="color: #555555; margin-bottom: 2rem;">Select a presentation mode</p>
         
         <div class="card-group">
-            <div class="card">
-                <h3>Document Upload</h3>
-                <p>Upload a PDF to present</p>
+            <div class="card" style="background: #f9f9f9; border-color: #e0e0e0;">
+                <div class="card-icon" style="margin-bottom: 15px; color: #38b6ff;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                </div>
+                <h3 style="color: #2c3971;">Document Upload</h3>
+                <p style="color: #555;">Upload a PDF or PPTX to present</p>
                 <input type="file" id="file-input" accept=".pdf,.pptx" style="display: none;" />
                 <button class="btn primary-btn" onclick="document.getElementById('file-input').click()">Choose File</button>
-                <div id="upload-status" style="margin-top: 10px; font-size: 0.9em;"></div>
+                <div id="upload-status" style="margin-top: 10px; font-size: 0.9em; color: #38b6ff;"></div>
             </div>
             
-            <div class="card">
-                <h3>Live Screen</h3>
-                <p>Mirror your display</p>
-                <a href="sender" class="btn secondary-btn">Share Screen</a>
+            <div class="card" style="background: #f9f9f9; border-color: #e0e0e0;">
+                <div class="card-icon" style="margin-bottom: 15px; color: #38b6ff;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <h3 style="color: #2c3971;">Live Screen</h3>
+                <p style="color: #555;">Mirror your display wirelessly</p>
+                <a href="sender" class="btn secondary-btn" style="background: #ffffff; color: #38b6ff; border-color: #38b6ff;">Share Screen</a>
             </div>
         </div>
 
-        <div style="margin-top: 2rem;">
-            <a href="receiver" class="status-text" style="color: rgba(255,255,255,0.5); text-decoration: none;">Open Projector Display (Receiver)</a>
+        <div style="margin-top: 2.5rem;">
+            <a href="receiver" class="status-text" style="color: #888; text-decoration: none;">
+                Open Projector Display (Receiver)
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 5px; vertical-align: middle;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
         </div>
     </div>
 
-    <script>
+<script>
         const fileInput = document.getElementById('file-input');
         const uploadStatus = document.getElementById('upload-status');
         const cardGroup = document.querySelector('.card-group');

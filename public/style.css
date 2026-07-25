@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 :root {
-    --bg-base: #000000;
-    --bg-surface: #0a0a0a;
-    --border-color: #222222;
-    --text-main: #ededed;
-    --text-muted: #888888;
-    --primary: #ffffff;
-    --primary-text: #000000;
-    --primary-hover: #e5e5e5;
+    --bg-base: #ffffff;
+    --bg-surface: #f9f9f9;
+    --border-color: #e0e0e0;
+    --text-main: #2c3971;
+    --text-muted: #555555;
+    --primary: #38b6ff;
+    --primary-text: #ffffff;
+    --primary-hover: #13a7c6;
 }
 
 * {
@@ -359,3 +359,4 @@ video {
         font-size: 1.25rem; /* Match sizes on PC */
     }
 }
+

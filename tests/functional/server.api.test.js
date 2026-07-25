@@ -80,10 +80,10 @@ after(() => {
 // Static Routes
 // ===========================================================================
 describe('Static Routes', () => {
-    test('GET / → 200, <h1>PiProjector</h1> and <title>PiProjector Dashboard</title> present', async () => {
+    test('GET / → 200, <h1>AeroBeam</h1> and <title>AeroBeam Dashboard</title> present', async () => {
         const res = await request(app).get('/').expect(200);
-        assert.ok(res.text.includes('<h1>PiProjector</h1>'));
-        assert.ok(res.text.includes('<title>PiProjector Dashboard</title>'));
+        assert.ok(res.text.includes('<h1>AeroBeam</h1>'));
+        assert.ok(res.text.includes('<title>AeroBeam Dashboard</title>'));
     });
 
     test('GET /receiver → 200, body includes id="waiting-overlay" and id="remote-video"', async () => {
@@ -109,8 +109,8 @@ describe('Static Routes', () => {
 
     test('GET /index also resolves (extensions fallback) → 200 with same body as /', async () => {
         const res = await request(app).get('/index').expect(200);
-        assert.ok(res.text.includes('<h1>PiProjector</h1>'));
-        assert.ok(res.text.includes('<title>PiProjector Dashboard</title>'));
+        assert.ok(res.text.includes('<h1>AeroBeam</h1>'));
+        assert.ok(res.text.includes('<title>AeroBeam Dashboard</title>'));
     });
 
     test('GET /unknown-path-xyz → 404', async () => {

@@ -1,6 +1,6 @@
-# PiProjector Roadmap
+# AeroBeam Roadmap
 
-Based on the Product Requirements Document (Full Presentation Suite) and current codebase status, this document tracks the phases of the PiProjector project.
+Based on the Product Requirements Document (Full Presentation Suite) and current codebase status, this document tracks the phases of the AeroBeam project.
 
 ## Phase 1: Core Setup & Infrastructure
 - [x] Initialize Node.js project.

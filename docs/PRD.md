@@ -1,7 +1,7 @@
-# Product Requirements Document: PiProjector (Full Presentation Suite)
+# Product Requirements Document: AeroBeam (Full Presentation Suite)
 
 ## Overview
-This document outlines the comprehensive PiProjector ecosystem. It combines local document hosting, native slide rendering, smartphone remote control, and live screen sharing into a single, unified web application operating over local peer-to-peer web technologies without requiring internet access.
+This document outlines the comprehensive AeroBeam ecosystem. It combines local document hosting, native slide rendering, smartphone remote control, and live screen sharing into a single, unified web application operating over local peer-to-peer web technologies without requiring internet access.
 
 ## Target Audience
 - Presenters, educators, or individuals in meeting rooms needing a seamless, hardware-agnostic way to cast their screens or control presentations on a projector without HDMI cables or dongles.

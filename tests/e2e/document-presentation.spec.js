@@ -15,7 +15,7 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // 2. Open Receiver and wait for it to be ready
     await receiverPage.goto('/receiver');
-    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('AeroBeam is Ready');
 
     // 3. Open Sender (Index) and upload PDF, capturing the served fileUrl
     await senderPage.goto('/index');
@@ -102,7 +102,7 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // Open Receiver
     await receiverPage.goto('/receiver');
-    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('AeroBeam is Ready');
 
     // Open Sender (Index) and upload PPTX
     await senderPage.goto('/index');
@@ -151,7 +151,7 @@ test.describe('Document Presentation with Remote Preview', () => {
     const senderPage = await senderContext.newPage();
 
     await receiverPage.goto('/receiver');
-    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('AeroBeam is Ready');
 
     await senderPage.goto('/index');
 

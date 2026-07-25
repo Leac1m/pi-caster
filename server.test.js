@@ -15,7 +15,7 @@ test('Server endpoints and sockets', async (t) => {
     await t.test('GET / serves static index.html', async () => {
         const response = await request(app).get('/');
         assert.strictEqual(response.status, 200);
-        assert.ok(response.text.includes('PiProjector Dashboard'));
+        assert.ok(response.text.includes('AeroBeam Dashboard'));
     });
 
     await t.test('POST /upload without file returns 400', async () => {

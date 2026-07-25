@@ -11,7 +11,7 @@ test.describe('WebRTC Screen Sharing', () => {
 
     // 2. Open Receiver and ensure it connects
     await receiverPage.goto('/receiver');
-    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('PiProjector is Ready');
+    await expect(receiverPage.locator('#waiting-overlay h1')).toContainText('AeroBeam is Ready');
     
     // The video element exists but is empty initially
     const remoteVideo = receiverPage.locator('#remote-video');

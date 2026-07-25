@@ -76,7 +76,7 @@
         const ipText = document.getElementById('ip-text');
         const connectingSpinner = document.getElementById('connecting-spinner');
 
-        const WIFI_PAYLOAD = 'WIFI:T:WPA;S:PiCaster;P:picaster2026;;';
+        const WIFI_PAYLOAD = 'WIFI:T:WPA;S:AeroBeam;P:AeroBeam2026;;';
 
         const configuration = {
             'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
@@ -87,7 +87,7 @@
         function showReadyState(localIp) {
             connectingSpinner.style.display = 'none';
             overlayTitle.textContent = 'PiProjector is Ready';
-            overlaySubtitle.textContent = 'Scan to join PiCaster Wi-Fi and start casting';
+            overlaySubtitle.textContent = 'Scan to join AeroBeam Wi-Fi and start casting';
             qrContainer.style.display = 'block';
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
@@ -99,9 +99,9 @@
                 correctLevel: QRCode.CorrectLevel.M,
             });
             if (localIp && localIp !== 'localhost') {
-                ipText.textContent = `Server IP: ${localIp}  •  Or join 'PiCaster' Wi-Fi (Password: picaster2026)`;
+                ipText.textContent = `Server IP: ${localIp}  •  Or join 'AeroBeam' Wi-Fi (Password: AeroBeam2026)`;
             } else {
-                ipText.textContent = "Or manually join 'PiCaster' Wi-Fi (Password: picaster2026)";
+                ipText.textContent = "Or manually join 'AeroBeam' Wi-Fi (Password: AeroBeam2026)";
             }
             ipText.style.display = 'block';
         }

@@ -1,9 +1,9 @@
 #!/bin/bash
-# PiCaster - Enable Hotspot
-# This script re-enables the PiCaster Standalone AP configuration
+# AeroBeam - Enable Hotspot
+# This script re-enables the AeroBeam Standalone AP configuration
 # if you previously disabled it using restore-wifi.sh.
 
-echo "Re-enabling PiCaster Hotspot configuration..."
+echo "Re-enabling AeroBeam Hotspot configuration..."
 
 echo "Telling NetworkManager to ignore wlan0..."
 sudo mkdir -p /etc/NetworkManager/conf.d
@@ -43,4 +43,4 @@ sudo systemctl enable dnsmasq
 sudo systemctl start hostapd
 sudo systemctl start dnsmasq
 
-echo "PiCaster Hotspot has been re-enabled! Devices can now connect to 'PiCaster' Wi-Fi."
+echo "AeroBeam Hotspot has been re-enabled! Devices can now connect to 'AeroBeam' Wi-Fi."

@@ -7,9 +7,9 @@ test.describe('Phase 9: Standalone Network & Captive Portal', () => {
     // UA-aware captive detection is tracked as a Phase 9 / P1 feature (unimplemented).
     await page.goto('/captive');
 
-    // The portal should greet the user and reference the PiCaster network
+    // The portal should greet the user and reference the AeroBeam network
     await expect(page.locator('h1')).toContainText('Wi-Fi Connected!');
-    await expect(page.locator('.instructions').first()).toContainText('PiCaster network');
+    await expect(page.locator('.instructions').first()).toContainText('AeroBeam network');
 
     // The portal should tell users to navigate to cast.pi and offer a launch button
     await expect(page.locator('.domain-box')).toHaveText('cast.pi');
@@ -41,6 +41,6 @@ test.describe('Phase 9: Standalone Network & Captive Portal', () => {
     await expect(page.locator('#qrcode')).toBeVisible();
 
     // ip-text shows static hotspot instruction; if server is reachable it will include the dynamic IP.
-    await expect(page.locator('#ip-text')).toContainText('PiCaster');
+    await expect(page.locator('#ip-text')).toContainText('AeroBeam');
   });
 });

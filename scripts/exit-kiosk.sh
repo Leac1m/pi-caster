@@ -1,5 +1,5 @@
 #!/bin/bash
-# PiCaster Kiosk Exit Script
+# AeroBeam Kiosk Exit Script
 # Called by the web app (POST /api/exit-kiosk) or via magic URL when kiosk is running.
 # Attempts to restore the desktop gracefully; falls back to killing Chromium.
 #
@@ -11,7 +11,7 @@
 set -e
 
 LOG_PREFIX="[exit-kiosk]"
-PID_FILE="/tmp/pi-caster-kiosk.pid"
+PID_FILE="/tmp/aerobeam-kiosk.pid"
 
 log() { echo "$LOG_PREFIX $(date): $*"; }
 

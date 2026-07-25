@@ -1,5 +1,5 @@
 #!/bin/bash
-# PiCaster Dev Mode — for easy iteration without full kiosk/hotspot setup
+# AeroBeam Dev Mode — for easy iteration without full kiosk/hotspot setup
 # Usage: bash scripts/dev.sh
 #
 # What this does (on your laptop or Pi):
@@ -19,7 +19,7 @@ set -e
 
 PORT="${PORT:-3000}"
 
-echo "Starting PiCaster in dev mode on port $PORT..."
+echo "Starting AeroBeam in dev mode on port $PORT..."
 echo ""
 echo "URLs (dev mode, no HTTPS, no captive portal):"
 echo "  Dashboard : http://localhost:$PORT/"

@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="3">
-    <title>PiCaster is Starting…</title>
+    <title>AeroBeam is Starting…</title>
     <style>
         body {
             margin: 0;
@@ -67,7 +67,7 @@
 <body>
     <div class="container">
         <div class="spinner"></div>
-        <h1>PiCaster is Starting…</h1>
+        <h1>AeroBeam is Starting…</h1>
         <p>Waiting for the cast server to come online.</p>
         <p id="status">Connecting to server…</p>
     </div>
@@ -95,19 +95,19 @@
 
 http:// {
 	@captive {
-		not host localhost 10.42.0.1 picaster.local cast.pi
+		not host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
 	}
 	redir @captive http://10.42.0.1/captive.html 302
 
 	@local {
-		host localhost 10.42.0.1 picaster.local cast.pi
+		host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
 	}
 	redir @local https://{host}{uri} 308
 
 	import splash_screen
 }
 
-https://localhost, https://10.42.0.1, https://picaster.local, https://cast.pi {
+https://localhost, https://10.42.0.1, https://aerobeam.local, https://picaster.local, https://cast.pi {
 	tls internal
 	reverse_proxy {$APP_HOST:app}:3000
 

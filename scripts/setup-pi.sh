@@ -1,5 +1,5 @@
 #!/bin/bash
-# PiCaster Raspberry Pi Setup Script
+# AeroBeam Raspberry Pi Setup Script
 # This script configures a Raspberry Pi to boot into Chromium Kiosk Mode and ensures the server auto-starts.
 # Use --dev to skip kiosk/hotspot and run the server directly for easy iteration.
 
@@ -25,7 +25,7 @@ if [[ "$DEV_MODE" == "true" ]]; then
     exit $?
 fi
 
-echo "Starting PiCaster Raspberry Pi Setup..."
+echo "Starting AeroBeam Raspberry Pi Setup..."
 
 # 0. Install Prerequisites
 echo "Checking and installing prerequisites..."
@@ -61,7 +61,7 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Start the docker containers
-echo "Starting PiCaster docker containers..."
+echo "Starting AeroBeam docker containers..."
 if command -v docker-compose &> /dev/null; then
     sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate
 else
@@ -109,7 +109,7 @@ echo "Configuring hostapd..."
 cat <<EOF | sudo tee /etc/hostapd/hostapd.conf
 interface=wlan0
 driver=nl80211
-ssid=PiCaster
+ssid=AeroBeam
 hw_mode=g
 channel=6
 wmm_enabled=0
@@ -117,7 +117,7 @@ macaddr_acl=0
 auth_algs=1
 ignore_broadcast_ssid=0
 wpa=2
-wpa_passphrase=picaster2026
+wpa_passphrase=AeroBeam2026
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP

@@ -1,5 +1,5 @@
 #!/bin/bash
-# PiCaster - Restore Normal Wi-Fi
+# AeroBeam - Restore Normal Wi-Fi
 # This script undoes the Phase 9 Standalone AP configuration,
 # allowing the Raspberry Pi to connect to normal Wi-Fi networks again.
 

@@ -1,12 +1,12 @@
 #!/bin/bash
-# PiCaster Access Point Fallback & Captive Portal Manager
+# AeroBeam Access Point Fallback & Captive Portal Manager
 # Runs on the host machine to manage NetworkManager
 
 SHARED_DIR="$(dirname "$0")/.."
 CREDS_FILE="$SHARED_DIR/wifi-credentials.json"
 SCAN_FILE="$SHARED_DIR/wifi-scan-results.json"
-AP_SSID="PiCaster-Setup"
-AP_PASS="picaster"
+AP_SSID="AeroBeam-Setup"
+AP_PASS="aerobeam"
 
 echo "Starting AP Fallback Manager..."
 

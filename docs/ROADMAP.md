@@ -39,7 +39,7 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 ## Phase 7: Network Provisioning (AP Fallback & Captive Portal)
 - [x] Integrate a network manager tool (e.g., RaspAP or NetworkManager API) to allow the Pi to host its own Wi-Fi Hotspot.
 - [x] Implement fallback logic: If no known Wi-Fi network is detected on boot, automatically launch the Hotspot.
-- [x] Update Receiver UI to detect AP mode and display setup instructions ("Connect to Wi-Fi 'PiCaster-Setup'") instead of the standard IP QR code.
+- [x] Update Receiver UI to detect AP mode and display setup instructions ("Connect to Wi-Fi 'AeroBeam-Setup'") instead of the standard IP QR code.
 - [x] Build a Captive Portal web page served by the Node.js app to scan and display available local Wi-Fi networks.
 - [x] Implement backend endpoint to receive Wi-Fi credentials from the captive portal, save them to the OS, and restart the networking service to connect to the new network.
 
@@ -52,5 +52,5 @@ Based on the Product Requirements Document (Full Presentation Suite) and current
 - [ ] Configure the Pi to always broadcast its own Wi-Fi Access Point (Hotspot) immediately on boot, acting as the primary LAN.
 - [ ] Implement a DNS Server (e.g., `dnsmasq`) on the Pi to route all DNS queries to the Pi's IP address, triggering OS-level Captive Portal detection on client devices.
 - [ ] Update the Receiver UI to display a single "Join Wi-Fi" QR Code that automatically connects the user's phone/laptop to the Pi's Hotspot (using the `WIFI:T:WPA;S:...` format).
-- [ ] Serve the PiCaster Sender web application directly within the Captive Portal pop-up window, enabling instant, zero-configuration screen casting.
+- [ ] Serve the AeroBeam Sender web application directly within the Captive Portal pop-up window, enabling instant, zero-configuration screen casting.
 - [ ] Remove or adapt the legacy Phase 7 fallback logic, as the Pi is now the permanent network provider.

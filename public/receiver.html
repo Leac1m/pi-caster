@@ -302,8 +302,14 @@
 
 
         /* --- WebRTC Screen Share Logic --- */
+        let hasSetRemoteDescription = false;
+        let pendingCandidates = [];
+
         socket.on('offer', async (data) => {
             console.log('Received offer from', data.senderId);
+            
+            hasSetRemoteDescription = false;
+            pendingCandidates = [];
             
             if (peerConnection) {
                 peerConnection.close();
@@ -339,6 +345,13 @@
 
             try {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp }));
+                
+                hasSetRemoteDescription = true;
+                pendingCandidates.forEach(candidate => {
+                    if (peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+                });
+                pendingCandidates = [];
+
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 
@@ -350,8 +363,12 @@
 
         socket.on('ice-candidate', async (data) => {
             try {
-                if (peerConnection && data.candidate) {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                if (data.candidate) {
+                    if (peerConnection && hasSetRemoteDescription) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    } else {
+                        pendingCandidates.push(data.candidate);
+                    }
                 }
             } catch (e) {
                 console.error('Error adding received ice candidate', e);

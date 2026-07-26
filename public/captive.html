@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connected to AeroBeam</title>
     <style>
+        :root {
+            --pw-bg: #f8f9fa;
+            --pw-panel-bg: #ffffff;
+            --pw-border: #dee2e6;
+            --pw-text: #212529;
+            --pw-text-muted: #6c757d;
+            --pw-primary: #0d6efd;
+            --pw-primary-hover: #0b5ed7;
+            --pw-primary-text: #ffffff;
+            --pw-radius: 6px;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a1a2e;
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--pw-bg);
+            color: var(--pw-text);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,63 +30,112 @@
             text-align: center;
             padding: 20px;
         }
+        
         .container {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--pw-panel-bg);
             padding: 40px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            max-width: 400px;
+            border-radius: var(--pw-radius);
+            border: 1px solid var(--pw-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            max-width: 420px;
+            width: 100%;
         }
+        
         h1 {
-            color: #4facfe;
+            color: var(--pw-text);
+            font-size: 24px;
+            font-weight: 600;
             margin-top: 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--pw-border);
+            padding-bottom: 16px;
         }
+        
         .domain-box {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 1.5em;
+            background: var(--pw-bg);
+            border: 1px solid var(--pw-border);
+            padding: 16px;
+            border-radius: var(--pw-radius);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 1.25em;
             font-weight: bold;
-            letter-spacing: 2px;
-            margin: 20px 0;
-            color: #00f2fe;
+            letter-spacing: 1px;
+            margin: 24px 0;
+            color: var(--pw-text);
             user-select: all;
         }
+        
         .btn {
             display: inline-block;
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
+            background-color: var(--pw-primary);
+            color: var(--pw-primary-text);
             text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 1.1em;
+            padding: 12px 24px;
+            border-radius: var(--pw-radius);
+            font-weight: 500;
+            font-size: 1rem;
             margin-top: 10px;
-            transition: transform 0.2s;
+            transition: background-color 0.15s ease-in-out;
+            border: 1px solid transparent;
+            cursor: pointer;
         }
+        
+        .btn:hover {
+            background-color: var(--pw-primary-hover);
+        }
+        
         .btn:active {
-            transform: scale(0.95);
+            background-color: #0a58ca;
         }
+        
         .instructions {
-            opacity: 0.8;
+            color: var(--pw-text-muted);
             line-height: 1.5;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="main-content">
         <h1>Wi-Fi Connected!</h1>
         <p class="instructions">You have successfully joined the AeroBeam network. To start presenting, please open Safari or Chrome and navigate to:</p>
         
         <div class="domain-box">cast.pi</div>
         
-        <p class="instructions" style="font-size: 0.9em; margin-top: 30px;">
-            If your device supports it, you can tap the button below to launch your browser automatically.
+        <p class="instructions" style="font-size: 0.85rem; margin-top: 32px;">
+            Please tap the button below to complete the connection and open your browser.
         </p>
         
-        <a href="http://cast.pi" target="_blank" class="btn">Open cast.pi</a>
+        <button id="auth-btn" class="btn" style="border: none;">Connect & Open cast.pi</button>
     </div>
+
+    <script>
+        document.getElementById('auth-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('auth-btn');
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            btn.style.opacity = '0.7';
+            
+            try {
+                await fetch('/api/captive/authenticate', { method: 'POST' });
+            } catch (e) {
+                console.error('Auth failed', e);
+            }
+            
+            document.getElementById('main-content').innerHTML = `
+                <h1>Connection Complete!</h1>
+                <p class="instructions">You are now connected to the network.</p>
+                <div class="domain-box">cast.pi</div>
+                <p class="instructions" style="font-size: 0.95rem; margin-top: 24px; color: #000;">
+                    <b>Important:</b> If your browser does not open automatically, please tap <b>Done</b> or <b>Cancel</b> (and choose "Use Without Internet") in the top right corner to close this window, then open Safari/Chrome and navigate to the address above.
+                </p>
+            `;
+            
+            setTimeout(() => {
+                window.open('http://cast.pi', '_blank');
+            }, 500);
+        });
+    </script>
 </body>
 </html>

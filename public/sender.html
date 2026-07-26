@@ -112,9 +112,14 @@
                     peerConnection.addTrack(track, localStream);
                 });
 
+                let pendingCandidates = [];
                 peerConnection.onicecandidate = event => {
                     if (event.candidate) {
-                        socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                        if (peerConnection.localDescription) {
+                            socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                        } else {
+                            pendingCandidates.push(event.candidate);
+                        }
                     }
                 };
 
@@ -132,6 +137,11 @@
                 await peerConnection.setLocalDescription(offer);
                 
                 socket.emit('offer', { sdp: peerConnection.localDescription.sdp });
+
+                pendingCandidates.forEach(candidate => {
+                    socket.emit('ice-candidate', { target: 'receiver', candidate: candidate });
+                });
+                pendingCandidates = [];
 
                 shareBtn.style.display = 'none';
                 stopBtn.style.display = 'block';
@@ -170,9 +180,14 @@
                 });
             }
 
+            let pendingCandidates = [];
             peerConnection.onicecandidate = event => {
                 if (event.candidate) {
-                    socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                    if (peerConnection.localDescription) {
+                        socket.emit('ice-candidate', { target: 'receiver', candidate: event.candidate });
+                    } else {
+                        pendingCandidates.push(event.candidate);
+                    }
                 }
             };
             
@@ -185,6 +200,11 @@
             const offer = await peerConnection.createOffer({ iceRestart: true });
             await peerConnection.setLocalDescription(offer);
             socket.emit('offer', { sdp: peerConnection.localDescription.sdp });
+
+            pendingCandidates.forEach(candidate => {
+                socket.emit('ice-candidate', { target: 'receiver', candidate: candidate });
+            });
+            pendingCandidates = [];
         }
     </script>
 </body>

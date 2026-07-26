@@ -213,6 +213,10 @@ io.on('connection', (socket) => {
     });
 
     // Screen Share Events
+    socket.on('stop-screen-share', () => {
+        if (state.receiverSocketId) io.to(state.receiverSocketId).emit('stop-screen-share');
+    });
+
     socket.on('offer', (data) => {
         console.log('Offer received from', socket.id);
         if (state.receiverSocketId) {

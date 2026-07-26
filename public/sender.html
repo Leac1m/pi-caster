@@ -27,6 +27,7 @@
         });
         let peerConnection;
         let localStream;
+        let pendingCandidates = [];
 
         const shareBtn = document.getElementById('share-btn');
         const stopBtn = document.getElementById('stop-btn');
@@ -34,7 +35,7 @@
         const statusLabel = document.getElementById('status-label');
 
         const configuration = {
-            'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
+            'iceServers': []
         };
 
         socket.on('connect', () => {
@@ -65,6 +66,10 @@
             try {
                 if (peerConnection) {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: data.sdp }));
+                    for (const c of pendingCandidates) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(c));
+                    }
+                    pendingCandidates = [];
                 }
             } catch (e) {
                 console.error("Error setting remote description", e);
@@ -75,7 +80,11 @@
             console.log('Received ICE candidate');
             try {
                 if (peerConnection && data.candidate) {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    if (!peerConnection.remoteDescription) {
+                        pendingCandidates.push(data.candidate);
+                    } else {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
                 }
             } catch (e) {
                 console.error('Error adding received ice candidate', e);
@@ -99,7 +108,7 @@
                         height: { ideal: 1080 },
                         frameRate: { ideal: 30, max: 60 } // Optimized for presentation latency
                     },
-                    audio: false
+                    audio: true
                 });
 
                 localStream.getVideoTracks()[0].onended = () => {
@@ -152,6 +161,7 @@
                 peerConnection.close();
                 peerConnection = null;
             }
+            socket.emit('stop-screen-share');
             shareBtn.style.display = 'block';
             stopBtn.style.display = 'none';
             statusLabel.textContent = 'Ready to share';

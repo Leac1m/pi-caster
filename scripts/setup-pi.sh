@@ -164,7 +164,7 @@ if command -v labwc &> /dev/null || [ -d "$HOME/.config/labwc" ]; then
     LABWC_AUTOSTART="$HOME/.config/labwc/autostart"
 
     if ! grep -q "$CHROMIUM_CMD" "$LABWC_AUTOSTART" 2>/dev/null; then
-        echo "source /etc/pi-caster-env; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver &" >> "$LABWC_AUTOSTART"
+        echo "source /etc/pi-caster-env; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $PWD/scripts/start-chromium-kiosk.sh $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver &" >> "$LABWC_AUTOSTART"
         echo "Added Chromium to labwc autostart."
     else
         echo "Chromium autostart already configured in labwc."
@@ -177,7 +177,7 @@ elif command -v wayfire &> /dev/null || [ -f "/etc/wayfire/wayfire.ini" ]; then
 
     if ! grep -q "$CHROMIUM_CMD" "$WAYFIRE_INI" 2>/dev/null; then
         echo -e "\n[autostart]" >> "$WAYFIRE_INI"
-        echo "chromium = bash -c 'source /etc/pi-caster-env; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$WAYFIRE_INI"
+        echo "chromium = bash -c 'source /etc/pi-caster-env; KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $PWD/scripts/start-chromium-kiosk.sh $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$WAYFIRE_INI"
         echo "Added Chromium to Wayfire autostart."
     else
         echo "Chromium autostart already configured in Wayfire."
@@ -192,7 +192,7 @@ elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; 
         echo "@xset s off" >> "$AUTOSTART"
         echo "@xset -dpms" >> "$AUTOSTART"
         echo "@xset s noblank" >> "$AUTOSTART"
-        echo "@bash -c 'source /etc/pi-caster-env && KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$AUTOSTART"
+        echo "@bash -c 'source /etc/pi-caster-env && KIOSK_EXIT_TOKEN=\$KIOSK_EXIT_TOKEN $PWD/scripts/start-chromium-kiosk.sh $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver'" >> "$AUTOSTART"
         echo "Added Chromium to LXDE autostart."
     else
         echo "Chromium autostart already configured in LXDE."
@@ -200,7 +200,7 @@ elif command -v startlxde-pi &> /dev/null || command -v lxsession &> /dev/null; 
 else
     echo "Warning: Could not detect Wayfire or LXDE configuration directories."
     echo "Please manually configure your desktop environment to auto-start Chromium:"
-    echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver"
+    echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN $PWD/scripts/start-chromium-kiosk.sh $CHROMIUM_CMD $KIOSK_FLAGS https://localhost/receiver"
 fi
 
 echo "Setup complete! Please restart your Raspberry Pi to verify the kiosk mode."

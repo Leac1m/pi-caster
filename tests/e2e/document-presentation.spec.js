@@ -183,10 +183,8 @@ test.describe('Document Presentation with Remote Preview', () => {
     await expect(receiverPage.locator('#waiting-overlay')).toBeVisible({ timeout: 10000 });
 
     // The originally uploaded file must be gone
-    await expect.poll(async () => {
-      const fileCheck = await senderPage.request.get(fileUrl);
-      return fileCheck.status();
-    }, { timeout: 5000 }).toBe(404);
+    const fileCheck = await senderPage.request.get(fileUrl);
+    await expect(fileCheck.status()).toBe(404);
 
     await receiverContext.close();
     await senderContext.close();

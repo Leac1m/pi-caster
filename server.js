@@ -17,7 +17,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.set('trust proxy', true); // Trust Caddy proxy for real client IP
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
@@ -71,41 +70,6 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Captive Portal State
-const authenticatedIps = new Set();
-const localHosts = ['localhost', '10.42.0.1', 'aerobeam.local', 'picaster.local', 'cast.pi', '127.0.0.1', '::1'];
-
-// Captive Portal Probe Middleware
-app.use((req, res, next) => {
-    const host = req.hostname || '';
-    if (localHosts.includes(host)) {
-        return next();
-    }
-    
-    // If the request is for an external domain, it's a captive portal probe
-    const clientIp = req.ip;
-    
-    if (authenticatedIps.has(clientIp)) {
-        // IP is authenticated. Satisfy the probe.
-        if (req.headers['user-agent'] && req.headers['user-agent'].includes('CaptiveNetworkSupport')) {
-            // Apple requires this specific HTML to show the "Done" button
-            return res.status(200).send('<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>');
-        }
-        // Android/Windows are satisfied with 204 No Content
-        return res.status(204).send();
-    } else {
-        // IP is not authenticated. Redirect to our captive portal page.
-        return res.redirect(302, `http://10.42.0.1/captive.html`);
-    }
-});
-
-// Captive Portal Authentication Endpoint
-app.post('/api/captive/authenticate', (req, res) => {
-    const clientIp = req.ip;
-    authenticatedIps.add(clientIp);
-    res.json({ success: true });
-});
 
 // Local IP Route
 app.get('/api/ip', (req, res) => {

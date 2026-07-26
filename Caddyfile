@@ -94,15 +94,55 @@
 }
 
 http:// {
-	@captive {
-		not host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
+	# 1. Windows NCSI
+	@windows {
+		host www.msftncsi.com www.msftconnecttest.com ipv6.msftconnecttest.com
+		path /ncsi.txt /connecttest.txt
 	}
-	redir @captive http://10.42.0.1/captive.html 302
+	respond @windows "Microsoft Connect Test" 200 {
+		header Content-Type text/plain
+	}
+
+	# 2. Apple CNA
+	@apple {
+		host captive.apple.com www.airport.us www.ibook.info www.itools.info www.thinkdifferent.us
+	}
+	respond @apple "<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>" 200 {
+		header Content-Type text/html
+	}
+
+	# 3. Android / Google
+	@android {
+		host connectivitycheck.gstatic.com clients3.google.com connectivitycheck.android.com play.googleapis.com
+		path /generate_204
+	}
+	respond @android 204
+
+	# 4. Linux (NetworkManager)
+	@linux {
+		host nmcheck.gnome.org
+	}
+	respond @linux "NetworkManager is online" 200 {
+		header Content-Type text/plain
+	}
+
+	# 5. Firefox
+	@firefox {
+		host detectportal.firefox.com
+	}
+	respond @firefox "success\n" 200 {
+		header Content-Type text/plain
+	}
 
 	@local {
 		host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
 	}
 	redir @local https://{host}{uri} 308
+
+	@captive {
+		not host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
+	}
+	redir @captive http://10.42.0.1/captive.html 302
 
 	import splash_screen
 }

@@ -97,7 +97,17 @@ http:// {
 	@captive {
 		not host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
 	}
-	redir @captive http://10.42.0.1/captive.html 302
+	handle @captive {
+		reverse_proxy {$APP_HOST:app}:3000
+	}
+
+	@captive_page {
+		host 10.42.0.1
+		path /captive.html /api/captive/authenticate
+	}
+	handle @captive_page {
+		reverse_proxy {$APP_HOST:app}:3000
+	}
 
 	@local {
 		host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi

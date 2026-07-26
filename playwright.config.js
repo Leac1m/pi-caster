@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // WebRTC interactions can be stateful, safest to run 1 worker for Sender/Receiver pairs
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: `http://127.0.0.1:${process.env.PORT || 3000}`,
     trace: 'on-first-retry',

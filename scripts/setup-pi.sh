@@ -152,7 +152,7 @@ echo "KIOSK_EXIT_TOKEN=$KIOSK_EXIT_TOKEN" | sudo tee /etc/pi-caster-env > /dev/n
 echo "Generated kiosk exit token (saved to /etc/pi-caster-env)."
 
 # Build Chromium flags with kiosk escape support
-KIOSK_FLAGS="--kiosk --noerrdialogs --disable-infobars --incognito --autoplay-policy=no-user-gesture-required"
+KIOSK_FLAGS="--kiosk --noerrdialogs --disable-infobars --incognito --autoplay-policy=no-user-gesture-required --ignore-certificate-errors"
 KIOSK_FLAGS="$KIOSK_FLAGS --ozone-platform=wayland"
 KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-escape-key=Escape"
 KIOSK_FLAGS="$KIOSK_FLAGS --kiosk-shortcut-action=openUrl"

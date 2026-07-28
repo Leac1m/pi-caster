@@ -7,10 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     
-    <script src="/vendor/jszip.min.js"></script>
-    <script src="/vendor/d3.min.js"></script>
-    <script src="/vendor/nv.d3.min.js"></script>
-    <script src="/vendor/pptxjs.min.js"></script>
+
 </head>
 <body class="landing-body" style="align-items: stretch; margin: 0; padding: 0;">
     <div class="remote-container" style="display: flex; flex-direction: column; height: 100vh;">
@@ -67,10 +64,11 @@
         let viewerClient = null;
         let viewerInstance = null;
         let currentPageNum = 1;
+        let pendingPresentation = null;
         
-        import('/vendor/udoc/src/index.js').then(async (mod) => {
+        import('/vendor/udoc-viewer.bundle.js').then(async (mod) => {
             viewerClient = await mod.UDocClient.create({
-                baseUrl: '/vendor/udoc/',
+                baseUrl: window.location.origin + '/vendor/udoc-assets/',
                 googleFonts: false
             });
             viewerInstance = await viewerClient.createViewer({
@@ -87,6 +85,22 @@
             viewerInstance.on('page-changed', (e) => {
                 currentPageNum = e.page;
             });
+            
+            if (pendingPresentation) {
+                const data = pendingPresentation;
+                pendingPresentation = null;
+                try {
+                    await viewerInstance.load(data.fileUrl);
+                    if (data.slide) {
+                        viewerInstance.goToPage(data.slide);
+                    }
+                    loadingText.style.display = 'none';
+                    document.getElementById('viewer-container').style.display = 'block';
+                } catch (err) {
+                    console.error("Error loading document:", err);
+                    loadingText.textContent = "Preview unavailable";
+                }
+            }
         }).catch(err => console.error('Failed to load udoc-viewer', err));
 
         socket.on('connect', () => {
@@ -121,34 +135,12 @@
                     loadingText.textContent = "Preview unavailable";
                 }
             } else {
-                loadingText.textContent = "Viewer not initialized";
+                pendingPresentation = data;
+                loadingText.textContent = "Loading viewer...";
             }
         });
 
-                // Poll for slides rendering
-                const checkReady = setInterval(() => {
-                    const slides = $('#pptx-preview .slide');
-                    if (slides.length > 0) {
-                        clearInterval(checkReady);
-                        totalPptxSlides = slides.length;
-                        loadingText.style.display = 'none';
-                        renderPptxSlide(pageNum);
-                    }
-                }, 500);
 
-            } else if (pdfJS) {
-                pdfCanvas.style.display = 'block';
-                pdfJS.getDocument(data.fileUrl).promise.then(doc => {
-                    pdfDoc = doc;
-                    renderPage(pageNum);
-                }).catch(err => {
-                    console.error("Error loading PDF preview", err);
-                    loadingText.textContent = "Preview unavailable";
-                });
-            }
-        });
-
-        
 
         document.getElementById('btn-next').addEventListener('click', () => {
             socket.emit('slide-next');

@@ -7,12 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/vendor/qrcode.min.js"></script>
-    <link rel="stylesheet" href="/vendor/pptxjs.css">
-    <script src="/vendor/jquery.min.js"></script>
-    <script src="/vendor/jszip.min.js"></script>
-    <script src="/vendor/d3.min.js"></script>
-    <script src="/vendor/nv.d3.min.js"></script>
-    <script src="/vendor/pptxjs.min.js"></script>
+
     <style>
         #pdf-render {
             display: none;
@@ -125,9 +120,11 @@
         let viewerClient = null;
         let viewerInstance = null;
         
-        import('/vendor/udoc/src/index.js').then(async (mod) => {
+        let pendingPresentation = null;
+        
+        import('/vendor/udoc-viewer.bundle.js').then(async (mod) => {
             viewerClient = await mod.UDocClient.create({
-                baseUrl: '/vendor/udoc/',
+                baseUrl: window.location.origin + '/vendor/udoc-assets/',
                 googleFonts: false
             });
             viewerInstance = await viewerClient.createViewer({
@@ -139,6 +136,25 @@
                 scrollMode: 'continuous',
                 zoomMode: 'fit-spread'
             });
+            
+            // Sync page number
+            viewerInstance.on('page-changed', (e) => {
+                currentPageNum = e.page;
+                socket.emit('page_changed', { slide: e.page });
+            });
+
+            if (pendingPresentation) {
+                const data = pendingPresentation;
+                pendingPresentation = null;
+                try {
+                    await viewerInstance.load(data.fileUrl);
+                    if (data.slide) viewerInstance.goToPage(data.slide);
+                    document.getElementById('preview-loading').style.display = 'none';
+                    document.getElementById('viewer-container').style.display = 'block';
+                } catch (err) {
+                    console.error("Error loading document:", err);
+                }
+            }
         }).catch(err => console.error('Failed to load udoc-viewer', err));
 
         socket.on('presentation-start', async (data) => {
@@ -161,37 +177,12 @@
                     resetAll();
                 }
             } else {
-                console.error("Viewer not initialized yet.");
-                resetAll();
+                console.log("Viewer not initialized yet. Queuing presentation.");
+                pendingPresentation = data;
             }
         });
 
-                // Poll for slides rendering
-                const checkReady = setInterval(() => {
-                    const slides = $('#pptx-render .slide');
-                    if (slides.length > 0) {
-                        clearInterval(checkReady);
-                        totalPptxSlides = slides.length;
-                        renderPptxSlide(pageNum);
-                    }
-                }, 500);
 
-            } else if (pdfJS) {
-                pdfCanvas.style.display = 'block';
-                pdfJS.getDocument(data.fileUrl).promise.then(doc => {
-                    pdfDoc = doc;
-                    renderPage(pageNum);
-                }).catch(err => {
-                    console.error("Error loading PDF", err);
-                    resetAll();
-                });
-            } else {
-                console.error("Cannot load presentation, PDF.js not initialized.");
-                resetAll();
-            }
-        });
-
-        
 
         socket.on('slide-next', () => {
             if (viewerInstance && viewerInstance.isLoaded && viewerInstance.currentPage < viewerInstance.pageCount) {
@@ -205,15 +196,7 @@
             }
         });
 
-        socket.on('slide-prev', () => {
-            if (isPptx && pageNum > 1) {
-                pageNum--;
-                renderPptxSlide(pageNum);
-            } else if (!isPptx && pdfDoc && pageNum > 1) {
-                pageNum--;
-                queueRenderPage(pageNum);
-            }
-        });
+
 
         socket.on('presentation-stop', () => {
             console.log("Stopping presentation");

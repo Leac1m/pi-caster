@@ -55,11 +55,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:", "https:"],
-            connectSrc: ["'self'", "ws:", "wss:", "blob:"],
+            connectSrc: ["'self'", "ws:", "wss:", "blob:", "https:"],
             mediaSrc: ["'self'", "blob:"],
             workerSrc: ["'self'", "blob:"],
             fontSrc: ["'self'", "data:", "https:"],
@@ -71,7 +71,7 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/vendor/udoc', express.static(path.join(__dirname, 'node_modules', '@docmentis', 'udoc-viewer', 'dist')));
+app.use('/vendor/udoc', express.static(path.join(__dirname, 'node_modules', '@docmentis', 'udoc-viewer', 'dist'), { extensions: ['js'] }));
 
 // Local IP Route
 app.get('/api/ip', (req, res) => {

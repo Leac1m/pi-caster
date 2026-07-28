@@ -103,13 +103,25 @@
 
                 localStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { 
-                        cursor: "always",
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        frameRate: { ideal: 30, max: 60 } // Optimized for presentation latency
+                        cursor: "always"
                     },
                     audio: true
                 });
+
+                // In strict browser implementations (like Windows Chrome/Edge), passing width/height/frameRate 
+                // directly into getDisplayMedia throws a TypeError. We must apply them after capturing.
+                if (localStream.getVideoTracks().length > 0) {
+                    const videoTrack = localStream.getVideoTracks()[0];
+                    try {
+                        await videoTrack.applyConstraints({
+                            width: { ideal: 1920 },
+                            height: { max: 1080 },
+                            frameRate: { ideal: 30, max: 60 }
+                        });
+                    } catch (e) {
+                        console.warn("Could not apply advanced constraints to screen capture:", e);
+                    }
+                }
 
                 localStream.getVideoTracks()[0].onended = () => {
                     stopSharing();

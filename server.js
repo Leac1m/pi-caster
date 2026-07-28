@@ -36,10 +36,11 @@ const storage = multer.diskStorage({
 
 function fileFilter(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.pdf' || ext === '.pptx') {
+    const allowed = ['.pdf', '.pptx', '.docx', '.xlsx', '.csv'];
+    if (allowed.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Only .pdf and .pptx files are allowed'));
+        cb(new Error('Unsupported file type'));
     }
 }
 
@@ -70,6 +71,7 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/vendor/udoc', express.static(path.join(__dirname, 'node_modules', '@docmentis', 'udoc-viewer', 'dist')));
 
 // Local IP Route
 app.get('/api/ip', (req, res) => {

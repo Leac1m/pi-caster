@@ -190,7 +190,7 @@ test('security: upload rejects wrong extension via fileFilter', async () => {
 
     assert.equal(res.status, 400);
     assert.equal(res.body.success, false);
-    assert.match(res.body.error || '', /Only \.pdf and \.pptx files are allowed/i);
+    assert.match(res.body.error || '', /Unsupported file type/i);
     __testReset();
 });
 
@@ -206,7 +206,7 @@ test('security: upload rejects .svg with XSS payload', async () => {
 
     assert.equal(res.status, 400);
     assert.equal(res.body.success, false);
-    assert.match(res.body.error || '', /Only \.pdf and \.pptx files are allowed/i);
+    assert.match(res.body.error || '', /Unsupported file type/i);
     __testReset();
 });
 

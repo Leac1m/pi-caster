@@ -306,7 +306,7 @@ describe('Upload Routes', () => {
             .post('/upload')
             .attach('presentation', Buffer.from('text'), 'small.txt')
             .expect(400);
-        assert.ok(res.body.error.includes('Only .pdf and .pptx files are allowed'));
+        assert.ok(res.body.error.includes('Unsupported file type'));
     });
 
     test('POST /upload with originalname containing path traversal → saved file stays inside UPLOAD_DIR', async () => {

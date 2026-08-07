@@ -116,7 +116,7 @@ http:// {
 	}
 	@local {
 		host localhost aerobeam.local picaster.local cast.local *.local *.lan *.home
-		header_regexp Host ^([0-9]{1,3}\.){3}[0-9]{1,3}$
+		header_regexp Host ^([0-9]{1,3}\.){3}[0-9]{1,3}
 	}
 
 	handle @windows {

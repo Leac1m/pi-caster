@@ -328,6 +328,7 @@ video {
     flex-direction: column;
     gap: 10px;
     justify-content: flex-end;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 .control-btn {

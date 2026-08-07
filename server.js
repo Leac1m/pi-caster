@@ -36,11 +36,10 @@ const storage = multer.diskStorage({
 
 function fileFilter(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowed = ['.pdf', '.pptx', '.docx', '.xlsx', '.csv'];
-    if (allowed.includes(ext)) {
+    if (ext === '.pdf' || ext === '.pptx') {
         cb(null, true);
     } else {
-        cb(new Error('Unsupported file type'));
+        cb(new Error('Only .pdf and .pptx files are allowed'));
     }
 }
 
@@ -55,11 +54,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:", "https:"],
-            connectSrc: ["'self'", "ws:", "wss:", "blob:", "https:"],
+            connectSrc: ["'self'", "ws:", "wss:", "blob:"],
             mediaSrc: ["'self'", "blob:"],
             workerSrc: ["'self'", "blob:"],
             fontSrc: ["'self'", "data:", "https:"],
@@ -71,7 +70,6 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/vendor/udoc', express.static(path.join(__dirname, 'node_modules', '@docmentis', 'udoc-viewer', 'dist'), { extensions: ['js'] }));
 
 // Local IP Route
 app.get('/api/ip', (req, res) => {
@@ -237,6 +235,10 @@ io.on('connection', (socket) => {
         } else if (data.targetId) {
             io.to(data.targetId).emit('ice-candidate', { candidate: data.candidate });
         }
+    });
+
+    socket.on('telemetry', (data) => {
+        console.log(`[Client Telemetry - ${data.context || 'General'}]: ${data.name || ''} - ${data.message || ''}`);
     });
 
     socket.on('disconnect', () => {

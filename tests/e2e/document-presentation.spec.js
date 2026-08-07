@@ -40,12 +40,12 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // The preview loading text should disappear and the canvas should become visible
     await expect(senderPage.locator('#preview-loading')).toBeHidden();
-    await expect(senderPage.locator('#viewer-container')).toBeVisible();
+    await expect(senderPage.locator('#pdf-preview')).toBeVisible();
 
     // 5. Verify Receiver UI
     // The waiting overlay should disappear and the pdf canvas should be visible
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
-    await expect(receiverPage.locator('#viewer-container')).toBeVisible();
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // 6. Test accidental refresh recovery (No slide-next because dummy PDF is 1 page)
 
@@ -55,16 +55,16 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // Verify Remote instantly recovers the preview
     await expect(senderPage.locator('#preview-loading')).toBeHidden();
-    await expect(senderPage.locator('#viewer-container')).toBeVisible();
+    await expect(senderPage.locator('#pdf-preview')).toBeVisible();
 
     // Verify Receiver was NOT stopped by the disconnect
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
-    await expect(receiverPage.locator('#viewer-container')).toBeVisible();
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // Simulate accidental crash/refresh on the Receiver (Projector)
     await receiverPage.reload();
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
-    await expect(receiverPage.locator('#viewer-container')).toBeVisible();
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // 7. Test stopping presentation
     await senderPage.locator('#btn-stop').click();
@@ -72,7 +72,7 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // Receiver should reset to waiting screen
     await expect(receiverPage.locator('#waiting-overlay')).toBeVisible();
-    await expect(receiverPage.locator('#viewer-container')).toBeHidden();
+    await expect(receiverPage.locator('#pdf-render')).toBeHidden();
 
     // 8. Phase 1 regression: stopping must purge the uploaded file from the server
     const fileCheck = await senderPage.request.get(fileUrl);
@@ -120,11 +120,11 @@ test.describe('Document Presentation with Remote Preview', () => {
     
     // The PPTX loading div should become visible and loading text disappear
     await expect(senderPage.locator('#preview-loading')).toBeHidden({ timeout: 15000 });
-    await expect(senderPage.locator('#viewer-container')).toBeVisible();
+    await expect(senderPage.locator('#pptx-preview')).toBeVisible();
 
     // Verify Receiver UI
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/, { timeout: 10000 });
-    await expect(receiverPage.locator('#viewer-container')).toBeVisible();
+    await expect(receiverPage.locator('#pptx-render')).toBeVisible();
 
     // Test stopping presentation
     await senderPage.locator('#btn-stop').click();
@@ -132,7 +132,7 @@ test.describe('Document Presentation with Remote Preview', () => {
 
     // Receiver should reset
     await expect(receiverPage.locator('#waiting-overlay')).toBeVisible();
-    await expect(receiverPage.locator('#viewer-container')).toBeHidden();
+    await expect(receiverPage.locator('#pptx-render')).toBeHidden();
 
     // Cleanup
     await receiverContext.close();
@@ -170,9 +170,9 @@ test.describe('Document Presentation with Remote Preview', () => {
     await senderPage.waitForURL('**/remote');
 
     // Presentation is active on both remote and receiver
-    await expect(senderPage.locator('#viewer-container')).toBeVisible();
+    await expect(senderPage.locator('#pdf-preview')).toBeVisible();
     await expect(receiverPage.locator('#waiting-overlay')).toHaveClass(/hidden/);
-    await expect(receiverPage.locator('#viewer-container')).toBeVisible();
+    await expect(receiverPage.locator('#pdf-render')).toBeVisible();
 
     // Stop the presentation
     await senderPage.locator('#btn-stop').click();

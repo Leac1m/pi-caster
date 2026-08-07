@@ -72,6 +72,7 @@
                     pendingCandidates = [];
                 }
             } catch (e) {
+                socket.emit('telemetry', { level: 'error', context: 'webrtc', message: e.message, name: e.name });
                 console.error("Error setting remote description", e);
             }
         });
@@ -87,6 +88,7 @@
                     }
                 }
             } catch (e) {
+                socket.emit('telemetry', { level: 'error', context: 'webrtc', message: e.message, name: e.name });
                 console.error('Error adding received ice candidate', e);
             }
         });
@@ -119,6 +121,7 @@
                             frameRate: { ideal: 30, max: 60 }
                         });
                     } catch (e) {
+                        socket.emit('telemetry', { level: 'warning', context: 'webrtc', message: e.message, name: e.name });
                         console.warn("Could not apply advanced constraints to screen capture:", e);
                     }
                 }
@@ -141,6 +144,7 @@
 
                 peerConnection.onconnectionstatechange = () => {
                     if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                        socket.emit('telemetry', { level: 'error', context: 'webrtc', message: 'Connection state changed to ' + peerConnection.connectionState, name: 'ConnectionError' });
                         console.log('WebRTC connection lost. Attempting to reconnect...');
                         if (localStream) {
                             reconnectWebRTC();
@@ -159,6 +163,7 @@
                 statusLabel.textContent = 'Sharing...';
 
             } catch (err) {
+                socket.emit('telemetry', { level: 'error', context: 'webrtc', message: err.message, name: err.name });
                 console.error("Error starting media stream:", err);
                 alert("Could not start screen or camera sharing. Ensure you are accessing this site via HTTPS and have granted permissions.");
             }

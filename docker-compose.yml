@@ -7,7 +7,7 @@ services:
     volumes:
       - ./:/app
       - /app/node_modules
-    command: node --watch server.js
+    command: node server.js
 
   proxy:
     image: caddy:alpine
@@ -33,25 +33,10 @@ services:
       --no-tls --no-dtls
 
   vosk:
-    image: alphacep/kaldi-en:latest
+    build: ./vosk-server
     restart: unless-stopped
     ports:
       - "2700:2700"
-    volumes:
-      - vosk_model:/opt/vosk-model-en
-    command: >
-      /bin/bash -c "
-      if [ ! -f /opt/vosk-model-en/am/final.mdl ]; then
-        echo 'Downloading small model...';
-        cd /tmp;
-        wget -q https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip;
-        unzip -q vosk-model-small-en-us-0.15.zip;
-        mv vosk-model-small-en-us-0.15/* /opt/vosk-model-en/;
-        rm -rf vosk-model-small-en-us-0.15*;
-      fi;
-      python3 /opt/vosk-server/websocket/asr_server.py /opt/vosk-model-en
-      "
 
 volumes:
   caddy_data:
-  vosk_model:

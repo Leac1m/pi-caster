@@ -22,6 +22,16 @@
                     <p id="preview-loading">Loading Preview...</p>
                 </div>
             </div>
+
+            <div class="voice-control-section">
+                <p id="voice-status" class="voice-status">Tap mic to start voice control</p>
+                <div class="voice-btn-wrapper">
+                    <button id="btn-voice" class="btn voice-btn" title="Toggle Voice Control">
+                        <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="mic-icon"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                    <div class="ripple"></div>
+                </div>
+            </div>
             
             <div class="remote-button-group">
                 <button id="btn-prev" class="btn secondary-btn control-btn">Previous</button>
@@ -174,6 +184,102 @@
             } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
                 e.preventDefault();
                 document.getElementById('btn-prev').click();
+            }
+        });
+
+        // Voice Control Logic
+        const btnVoice = document.getElementById('btn-voice');
+        const voiceStatus = document.getElementById('voice-status');
+        let audioContext, voskSocket, audioStream;
+
+        const updateVoiceStatus = (msg, isError = false) => {
+            voiceStatus.textContent = msg;
+            voiceStatus.style.color = isError ? '#ef4444' : 'var(--text-muted)';
+        };
+
+        btnVoice.addEventListener('click', async () => {
+            if (btnVoice.classList.contains('active')) {
+                btnVoice.classList.remove('active');
+                if (audioContext) await audioContext.close();
+                if (voskSocket) voskSocket.close();
+                if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+                updateVoiceStatus('Tap mic to start voice control');
+                return;
+            }
+
+            try {
+                updateVoiceStatus('Starting voice engine...');
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                await audioContext.audioWorklet.addModule('/vosk-audio-processor.js');
+
+                const source = audioContext.createMediaStreamSource(audioStream);
+                const processor = new AudioWorkletNode(audioContext, 'vosk-audio-processor');
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                voskSocket = new WebSocket(`${wsProtocol}//${window.location.host}/vosk`);
+
+                voskSocket.onopen = () => {
+                    btnVoice.classList.add('active');
+                    updateVoiceStatus('Listening...');
+                    
+                    // Tune Vosk to only listen for our specific keywords
+                    voskSocket.send(JSON.stringify({
+                        config: {
+                            sample_rate: 16000,
+                            phrase_list: ["next slide", "previous slide", "[unk]"]
+                        }
+                    }));
+
+                    processor.port.onmessage = (event) => {
+                        if (voskSocket.readyState === WebSocket.OPEN) {
+                            voskSocket.send(event.data);
+                        }
+                    };
+                };
+
+                voskSocket.onmessage = (event) => {
+                    const result = JSON.parse(event.data);
+                    
+                    // Show real-time feedback of what it's hearing
+                    if (result.partial) {
+                        updateVoiceStatus(`Hearing: ${result.partial}`);
+                    }
+
+                    // We enforce exact matches to avoid triggering when the user
+                    // naturally says "on the next slide..." mid-sentence.
+                    if (result.text) {
+                        const text = result.text.toLowerCase().trim();
+                        if (text === 'next slide') {
+                            updateVoiceStatus('Command: Next slide!');
+                            document.getElementById('btn-next').click();
+                            setTimeout(() => { if (btnVoice.classList.contains('active')) updateVoiceStatus('Listening...'); }, 2000);
+                        } else if (text === 'previous slide') {
+                            updateVoiceStatus('Command: Previous slide!');
+                            document.getElementById('btn-prev').click();
+                            setTimeout(() => { if (btnVoice.classList.contains('active')) updateVoiceStatus('Listening...'); }, 2000);
+                        } else if (text !== '' && text !== '[unk]') {
+                            updateVoiceStatus(`Heard: "${result.text}"`);
+                            setTimeout(() => { if (btnVoice.classList.contains('active')) updateVoiceStatus('Listening...'); }, 2000);
+                        } else {
+                            if (btnVoice.classList.contains('active')) updateVoiceStatus('Listening...');
+                        }
+                    }
+                };
+
+                voskSocket.onerror = (err) => {
+                    console.error('Vosk WebSocket Error:', err);
+                    updateVoiceStatus('Disconnected from voice server', true);
+                    if (btnVoice.classList.contains('active')) btnVoice.click();
+                };
+
+            } catch (err) {
+                console.error('Error starting voice control:', err);
+                updateVoiceStatus('Microphone access denied', true);
             }
         });
     </script>

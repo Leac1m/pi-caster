@@ -102,10 +102,6 @@ describe('Static Routes', () => {
         assert.ok(res.text.includes('Share Screen'));
     });
 
-    test('GET /captive → 200, body includes cast.pi', async () => {
-        const res = await request(app).get('/captive').expect(200);
-        assert.ok(res.text.includes('cast.pi'));
-    });
 
     test('GET /index also resolves (extensions fallback) → 200 with same body as /', async () => {
         const res = await request(app).get('/index').expect(200);

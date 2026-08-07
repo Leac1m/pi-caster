@@ -111,8 +111,11 @@ http:// {
 	@firefox {
 		host detectportal.firefox.com
 	}
+	@legacy {
+		host cast.pi
+	}
 	@local {
-		host localhost aerobeam.local picaster.local cast.pi
+		host localhost aerobeam.local picaster.local cast.local
 		header_regexp Host ^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.)
 	}
 
@@ -135,26 +138,39 @@ http:// {
 		header Content-Type text/plain
 		respond "success\n" 200
 	}
+	handle @legacy {
+		redir https://cast.local{uri} 301
+	}
 	handle @local {
 		redir https://{host}{uri} 308
 	}
 	handle {
-		redir http://10.42.0.1/captive.html 302
+		redir http://cast.local 302
 	}
 
 	import splash_screen
 }
 
-https://localhost, https://10.42.0.1, https://aerobeam.local, https://picaster.local, https://cast.pi {
+https://localhost, https://10.42.0.1, https://aerobeam.local, https://picaster.local, https://cast.local, https://cast.pi {
 	tls internal
-	reverse_proxy {$APP_HOST:app}:3000
+	handle /vosk {
+		reverse_proxy vosk:2700
+	}
+	handle {
+		reverse_proxy {$APP_HOST:app}:3000
+	}
 
 	import splash_screen
 }
 
 https:// {
 	tls internal
-	reverse_proxy {$APP_HOST:app}:3000
+	handle /vosk {
+		reverse_proxy vosk:2700
+	}
+	handle {
+		reverse_proxy {$APP_HOST:app}:3000
+	}
 
 	import splash_screen
 }

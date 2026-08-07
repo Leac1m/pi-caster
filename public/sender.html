@@ -34,9 +34,20 @@
         const statusIndicator = document.getElementById('status-indicator');
         const statusLabel = document.getElementById('status-label');
 
-        const configuration = {
+        let configuration = {
             'iceServers': []
         };
+
+        // Fetch dynamic TURN configuration on load
+        fetch('/api/turn-config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.iceServers) {
+                    configuration.iceServers = data.iceServers;
+                    console.log("Loaded dynamic STUN/TURN configuration.");
+                }
+            })
+            .catch(err => console.warn("Failed to load TURN config, falling back to local candidates.", err));
 
         socket.on('connect', () => {
             statusIndicator.classList.add('connected');

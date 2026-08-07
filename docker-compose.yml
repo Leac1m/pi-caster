@@ -21,5 +21,16 @@ services:
     depends_on:
       - app
 
+  turn:
+    image: coturn/coturn:alpine
+    restart: unless-stopped
+    network_mode: host
+    command: >
+      -n --log-file=stdout
+      --min-port=49152 --max-port=65535
+      --user=aerobeam:aerobeam2026
+      --realm=aerobeam.local
+      --no-tls --no-dtls
+
 volumes:
   caddy_data:

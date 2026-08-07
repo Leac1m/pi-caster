@@ -1,0 +1,16 @@
+{
+	default_sni localhost
+}
+(splash_screen) {
+	handle_errors {
+		respond "Error" 502
+	}
+}
+https://localhost, https://10.42.0.1, https://aerobeam.local, https://picaster.local, https://cast.pi {
+	tls internal
+	reverse_proxy {$APP_HOST:app}:3000
+}
+https:// {
+	tls internal
+	reverse_proxy {$APP_HOST:app}:3000
+}

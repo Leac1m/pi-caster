@@ -75,9 +75,20 @@
 
         const WIFI_PAYLOAD = 'WIFI:T:WPA;S:AeroBeam;P:AeroBeam2026;;';
 
-        const configuration = {
+        let configuration = {
             'iceServers': []
         };
+
+        // Fetch dynamic TURN configuration on load
+        fetch('/api/turn-config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.iceServers) {
+                    configuration.iceServers = data.iceServers;
+                    console.log("Loaded dynamic STUN/TURN configuration.");
+                }
+            })
+            .catch(err => console.warn("Failed to load TURN config", err));
 
         // Show QR immediately — hotspot credentials are static.
         // The dynamic IP (for non-hotspot mode) is fetched below.
@@ -336,6 +347,7 @@
 
                 peerConnection.onconnectionstatechange = () => {
                     if (peerConnection.connectionState === 'failed') {
+                        socket.emit('telemetry', { level: 'error', context: 'webrtc-receiver', message: 'Connection state failed on receiver', name: 'ConnectionError' });
                         resetAll();
                     }
                 };

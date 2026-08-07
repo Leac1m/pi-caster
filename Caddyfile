@@ -112,7 +112,8 @@ http:// {
 		host detectportal.firefox.com
 	}
 	@local {
-		host localhost 10.42.0.1 aerobeam.local picaster.local cast.pi
+		host localhost aerobeam.local picaster.local cast.pi
+		header_regexp Host ^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.)
 	}
 
 	handle @windows {
@@ -145,6 +146,13 @@ http:// {
 }
 
 https://localhost, https://10.42.0.1, https://aerobeam.local, https://picaster.local, https://cast.pi {
+	tls internal
+	reverse_proxy {$APP_HOST:app}:3000
+
+	import splash_screen
+}
+
+https:// {
 	tls internal
 	reverse_proxy {$APP_HOST:app}:3000
 

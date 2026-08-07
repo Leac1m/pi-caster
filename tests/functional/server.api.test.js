@@ -292,21 +292,14 @@ describe('Upload Routes', () => {
         assert.ok(content.startsWith('%PDF-1.4'));
     });
 
-    test('POST /upload with valid pptx → 200, fileUrl endsWith .pptx', async () => {
-        const res = await request(app)
-            .post('/upload')
-            .attach('presentation', Buffer.from('fake pptx content'), 'small.pptx')
-            .expect(200);
-        assert.strictEqual(res.body.success, true);
-        assert.ok(res.body.fileUrl.endsWith('.pptx'));
-    });
+
 
     test('POST /upload with wrong extension → 400, error mentions allowed types', async () => {
         const res = await request(app)
             .post('/upload')
             .attach('presentation', Buffer.from('text'), 'small.txt')
             .expect(400);
-        assert.ok(res.body.error.includes('Unsupported file type'));
+        assert.ok(res.body.error.includes('Only .pdf files are allowed'));
     });
 
     test('POST /upload with originalname containing path traversal → saved file stays inside UPLOAD_DIR', async () => {

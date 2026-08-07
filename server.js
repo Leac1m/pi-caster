@@ -36,10 +36,10 @@ const storage = multer.diskStorage({
 
 function fileFilter(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.pdf' || ext === '.pptx') {
+    if (ext === '.pdf') {
         cb(null, true);
     } else {
-        cb(new Error('Only .pdf and .pptx files are allowed'));
+        cb(new Error('Only .pdf files are allowed'));
     }
 }
 

@@ -8,12 +8,6 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/vendor/pdf.min.js"></script>
     <script src="/vendor/qrcode.min.js"></script>
-    <link rel="stylesheet" href="/vendor/pptxjs.css">
-    <script src="/vendor/jquery.min.js"></script>
-    <script src="/vendor/jszip.min.js"></script>
-    <script src="/vendor/d3.min.js"></script>
-    <script src="/vendor/nv.d3.min.js"></script>
-    <script src="/vendor/pptxjs.min.js"></script>
     <style>
         #pdf-render {
             display: none;
@@ -34,7 +28,6 @@
         </div>
         <video id="remote-video" autoplay playsinline muted></video>
         <canvas id="pdf-render"></canvas>
-        <div id="pptx-render" style="width: 100%; height: 100%; display: none; background: transparent;"></div>
     </div>
 
     <script>
@@ -142,9 +135,6 @@
             pageIsRendering = false,
             pageNumIsPending = null;
 
-        let isPptx = false;
-        let totalPptxSlides = 1;
-
         // Safely initialize PDF.js
         const pdfJS = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
         if (pdfJS) {
@@ -191,45 +181,10 @@
             waitingOverlay.classList.add('hidden');
             remoteVideo.style.display = 'none';
             pdfCanvas.style.display = 'none';
-            document.getElementById('pptx-render').style.display = 'none';
 
-            isPptx = data.fileUrl.toLowerCase().endsWith('.pptx');
             pageNum = data.slide || 1;
 
-            if (isPptx) {
-                const pptxDiv = $('#pptx-render');
-                pptxDiv.empty();
-                pptxDiv.show();
-
-                pptxDiv.pptxToHtml({
-                    pptxFileUrl: data.fileUrl,
-                    slideMode: false,
-                    keyBoardShortCut: false,
-                    slideModeConfig: {
-                        first: 1, 
-                        nav: false,
-                        showPlayPauseBtn: false,
-                        showSlideNum: false, 
-                        showTotalSlideNum: false, 
-                        autoSlide: false, 
-                        randomAutoSlide: false, 
-                        loop: false, 
-                        background: "transparent", 
-                        transition: "default"
-                    }
-                });
-
-                // Poll for slides rendering
-                const checkReady = setInterval(() => {
-                    const slides = $('#pptx-render .slide');
-                    if (slides.length > 0) {
-                        clearInterval(checkReady);
-                        totalPptxSlides = slides.length;
-                        renderPptxSlide(pageNum);
-                    }
-                }, 500);
-
-            } else if (pdfJS) {
+            if (pdfJS) {
                 pdfCanvas.style.display = 'block';
                 pdfJS.getDocument(data.fileUrl).promise.then(doc => {
                     pdfDoc = doc;
@@ -244,64 +199,15 @@
             }
         });
 
-        const renderPptxSlide = (num) => {
-            const slides = $('#pptx-render .slide');
-            slides.hide();
-            const slide = slides[num - 1];
-            if (slide) {
-                $(slide).show();
-                scalePptxSlide(slide);
-            }
-        };
-
-        const scalePptxSlide = (slide) => {
-            const container = document.getElementById('pptx-render');
-            const slideWidth = slide.offsetWidth || 960;
-            const slideHeight = slide.offsetHeight || 720;
-            
-            const containerWidth = container.clientWidth;
-            const containerHeight = container.clientHeight;
-            
-            const scale = Math.min(containerWidth / slideWidth, containerHeight / slideHeight);
-            
-            slide.style.transformOrigin = 'top left';
-            slide.style.transform = `scale(${scale})`;
-            
-            // Center the scaled slide
-            const scaledWidth = slideWidth * scale;
-            const scaledHeight = slideHeight * scale;
-            const offsetX = (containerWidth - scaledWidth) / 2;
-            const offsetY = (containerHeight - scaledHeight) / 2;
-            
-            slide.style.position = 'absolute';
-            slide.style.left = `${offsetX}px`;
-            slide.style.top = `${offsetY}px`;
-        };
-
-        window.addEventListener('resize', () => {
-            if (isPptx) {
-                const slides = $('#pptx-render .slide');
-                if (slides[pageNum - 1]) {
-                    scalePptxSlide(slides[pageNum - 1]);
-                }
-            }
-        });
-
         socket.on('slide-next', () => {
-            if (isPptx && pageNum < totalPptxSlides) {
-                pageNum++;
-                renderPptxSlide(pageNum);
-            } else if (!isPptx && pdfDoc && pageNum < pdfDoc.numPages) {
+            if (pdfDoc && pageNum < pdfDoc.numPages) {
                 pageNum++;
                 queueRenderPage(pageNum);
             }
         });
 
         socket.on('slide-prev', () => {
-            if (isPptx && pageNum > 1) {
-                pageNum--;
-                renderPptxSlide(pageNum);
-            } else if (!isPptx && pdfDoc && pageNum > 1) {
+            if (pdfDoc && pageNum > 1) {
                 pageNum--;
                 queueRenderPage(pageNum);
             }
@@ -395,11 +301,8 @@
         function resetAll() {
             resetVideo();
             pdfDoc = null;
-            isPptx = false;
             pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
             pdfCanvas.style.display = 'none';
-            document.getElementById('pptx-render').style.display = 'none';
-            $('#pptx-render').empty();
             remoteVideo.style.display = 'block'; // reset to default
             waitingOverlay.classList.remove('hidden');
         }

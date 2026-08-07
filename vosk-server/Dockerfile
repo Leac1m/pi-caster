@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget unzip libatomic1 && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 RUN pip install --no-cache-dir vosk websockets
